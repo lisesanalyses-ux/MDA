@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | Aethereon Crystal Sync v3</title>
+    <title>PF 2026 | Aethereon Crystal Sync v5</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -13,17 +13,56 @@
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
         
-        /* ÚVODNÍ SCREEN A MANIFEST */
+        /* SIDEBAR MENU */
+        #side-menu {
+            position: fixed; left: -300px; top: 0; width: 300px; height: 100%;
+            background: rgba(0, 15, 15, 0.98); border-right: 1px solid #00ffcc;
+            z-index: 200; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1);
+            padding: 60px 25px; box-shadow: 30px 0 60px rgba(0,0,0,0.9);
+        }
+        #side-menu.open { left: 0; }
+        .menu-trigger {
+            position: fixed; left: 25px; top: 25px; z-index: 201;
+            cursor: pointer; font-size: 24px; color: #00ffcc; background: rgba(0,255,204,0.1);
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #00ffcc; border-radius: 12px; backdrop-filter: blur(5px);
+        }
+        .menu-item {
+            display: block; padding: 18px; margin-bottom: 12px; border: 1px solid rgba(0, 255, 204, 0.2);
+            color: #00ffcc; text-decoration: none; font-size: 11px; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        .menu-item:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; transform: translateX(10px); }
+
+        /* IFRAME OVERLAY */
+        #project-viewer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 150; background: #000; display: none;
+        }
+        #project-viewer iframe { width: 100%; height: 100%; border: none; }
+        .close-viewer {
+            position: absolute; top: 25px; right: 25px; z-index: 160;
+            padding: 12px 25px; background: #ff00ff; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px;
+        }
+
+        /* UI LAYER & MANIFEST */
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); text-align: center; padding: 20px; }
-        #manifest-text { font-size: 1.5rem; line-height: 1.6; max-width: 800px; margin-bottom: 40px; min-height: 120px; text-shadow: 0 0 10px #00ffcc; }
+        #manifest-text { font-size: 1.4rem; line-height: 1.6; max-width: 800px; margin-bottom: 40px; text-shadow: 0 0 10px #00ffcc; font-weight: 400; color: #00ffcc; }
         
-        .btn { border: 2px solid #00ffcc; padding: 12px 24px; cursor: pointer; margin: 8px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 280px; letter-spacing: 2px; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; transform: scale(1.05); }
+        .btn { border: 2px solid #00ffcc; padding: 14px 28px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 300px; letter-spacing: 2px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 35px #00ffcc; }
         
-        /* BUBBLE PROMO */
-        .promo-bubble { position: fixed; bottom: 5%; z-index: 100; background: rgba(0, 255, 204, 0.1); border: 1px solid #00ffcc; padding: 10px 20px; border-radius: 50px; backdrop-filter: blur(5px); font-size: 10px; color: #00ffcc !important; text-decoration: none; }
-        #link-web { left: 50%; transform: translateX(-110%); }
-        #link-mail { left: 50%; transform: translateX(10%); }
+        /* ODKAZY 35% OD KRAJU */
+        .promo-bubble { 
+            position: fixed; bottom: 8%; z-index: 100; 
+            background: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.4); 
+            padding: 12px 24px; border-radius: 50px; font-size: 11px; 
+            color: #00ffcc !important; text-decoration: none; backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        #link-web { left: 35%; transform: translateX(-50%); }
+        #link-mail { right: 35%; transform: translateX(50%); }
+        .promo-bubble:hover { background: rgba(0, 255, 204, 0.2); border-color: #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); }
 
         .glitch-2026 { animation: neon 1.5s ease-in-out infinite alternate; color: #fff; }
         @keyframes neon { from { text-shadow: 0 0 10px #00ffcc; } to { text-shadow: 0 0 20px #00ffcc, 0 0 30px #ff00ff; } }
@@ -31,64 +70,90 @@
 </head>
 <body>
 
+    <div class="menu-trigger" onclick="toggleMenu()">☰</div>
+    
+    <nav id="side-menu">
+        <h3 class="text-xs opacity-50 mb-8 tracking-[5px] text-cyan-500">AURA SYSTEM INDEX</h3>
+        <a href="#" class="menu-item" onclick="closeMenu(); location.reload();">00. RESET STAGE</a>
+        <a href="#" class="menu-item" onclick="loadProject('https://lisesanalyses-ux.github.io/MDA/')">01. MDA REPOSITORY</a>
+        <a href="#" class="menu-item" onclick="loadProject('AMM.html')">02. AMM PF 2026</a>
+        <a href="#" class="menu-item" onclick="loadProject('AuraManifest.html')">03. AURA MANIFEST</a>
+        <a href="#" class="menu-item" onclick="loadProject('ARi_touchA3.html')">04. SONIC MODULATOR</a>
+        <div class="mt-24 opacity-30 text-[9px] border-t border-cyan-900 pt-4">LICENCE: AURA_ADMIN // 2026</div>
+    </nav>
+
+    <div id="project-viewer">
+        <div class="close-viewer" onclick="closeProject()">[ BACK TO SYNC ]</div>
+        <iframe id="viewer-frame" src=""></iframe>
+    </div>
+
     <div id="ui-layer">
-        <h1 class="text-6xl mb-6 font-black glitch-2026 italic">PF 2026</h1>
+        <h1 class="text-7xl mb-6 font-black glitch-2026 italic">PF 2026</h1>
         <div id="manifest-text"></div>
         
         <div id="mode-selection" class="flex flex-col items-center">
             <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ ]</button>
-            <div class="h-px w-32 bg-gray-800 my-6"></div>
-            <input type="text" id="remote-id-input" placeholder="ZADEJ ID OBRAZOVKY" class="bg-black border border-cyan-500 text-center p-3 mb-2 w-[280px] text-white">
+            <div class="h-px w-40 bg-cyan-900 my-8"></div>
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID OBRAZOVKY" class="bg-black border border-cyan-500 text-center p-3 mb-3 w-[300px] text-white outline-none focus:border-white transition-all">
             <button class="btn" onclick="requestPermissions()">[ 2. SYNC TELEFON ]</button>
         </div>
     </div>
 
     <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">WEB: auraadmin.online</a>
-    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">KONTAKT</a>
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">KONTAKT: lisesanalyses@gmail.com</a>
 
     <canvas id="stage-canvas"></canvas>
     <video id="input-video" playsinline style="display:none;"></video>
 
     <script>
+        // --- MANIFEST TYPEWRITER ---
         const manifestStr = "EVERYONE SHOULD ASK: IN WHAT SOCIETY DO WE WANT TO LIVE? REALITY IS FORMED BY OUR DAILY DEEDS AND THE VIBRATION WE SHARE.";
-        const manifestEl = document.getElementById('manifest-text');
         let charIdx = 0;
-
-        // Psací efekt manifestu
         function typeManifest() {
             if (charIdx < manifestStr.length) {
-                manifestEl.innerHTML += manifestStr.charAt(charIdx);
-                charIdx++;
-                setTimeout(typeManifest, 40);
+                document.getElementById('manifest-text').innerHTML += manifestStr.charAt(charIdx);
+                charIdx++; setTimeout(typeManifest, 30);
             }
         }
         window.onload = typeManifest;
 
+        // --- MENU & VIEWER ---
+        function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
+        function closeMenu() { document.getElementById('side-menu').classList.remove('open'); }
+        function loadProject(url) {
+            const viewer = document.getElementById('project-viewer');
+            document.getElementById('viewer-frame').src = url;
+            viewer.style.display = 'block';
+            closeMenu();
+        }
+        function closeProject() {
+            document.getElementById('project-viewer').style.display = 'none';
+            document.getElementById('viewer-frame').src = '';
+        }
+
+        // --- CORE ENGINE ---
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         const videoElement = document.getElementById('input-video');
-        
         let peer, conn, isController = false;
         let particles = [], matrixDrops = [];
         let handX = -1000, handY = -1000, isFist = false;
         let gravityX = 0, gravityY = 0.1;
-        let audioCtx, oscillator, gainNode;
 
         const CRYSTALS = ["PF", "2", "0", "2", "6"];
         const ASCII = "01ΣΔΦΨΩ†≈∞";
 
-        // MATRIX DROP CLASS
         class Drop {
             constructor() { this.reset(); }
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * -canvas.height;
-                this.speed = Math.random() * 5 + 2;
+                this.speed = Math.random() * 4 + 2;
                 this.char = ASCII[Math.floor(Math.random()*ASCII.length)];
             }
             update() {
-                this.y += this.speed + (gravityY * 20);
-                this.x += gravityX * 10;
+                this.y += this.speed + (gravityY * 15);
+                this.x += gravityX * 8;
                 if (this.y > canvas.height) this.reset();
             }
             draw() {
@@ -98,54 +163,41 @@
             }
         }
 
-        // CRYSTAL PARTICLE CLASS
         class Particle {
-            constructor() {
-                this.zone = Math.floor(Math.random() * 5);
-                this.reset();
-            }
+            constructor() { this.zone = Math.floor(Math.random() * 5); this.reset(); }
             reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.vx = 0; this.vy = 0;
-                this.size = Math.random() * 15 + 20; // Větší krystaly
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.vx = 0; this.vy = 0; this.size = Math.random() * 20 + 30;
             }
             update() {
                 let zoneWidth = canvas.width / 5;
                 let targetX = (this.zone * zoneWidth) + (zoneWidth / 2) + (gravityX * 100);
                 let targetY = (canvas.height / 2) + (gravityY * 100);
-                
                 if (isFist && handX > -500) {
-                    let dx = handX - this.x, dy = handY - this.y;
-                    let d = Math.hypot(dx, dy);
-                    if(d < 400) { targetX = handX; targetY = handY; }
+                    let d = Math.hypot(handX - this.x, handY - this.y);
+                    if(d < 500) { targetX = handX; targetY = handY; }
                 }
-
-                this.vx += (targetX - this.x) * 0.03;
-                this.vy += (targetY - this.y) * 0.03;
-                this.vx *= 0.9; this.vy *= 0.9;
+                this.vx += (targetX - this.x) * 0.04; this.vy += (targetY - this.y) * 0.04;
+                this.vx *= 0.85; this.vy *= 0.85;
                 this.x += this.vx; this.y += this.vy;
             }
             draw() {
                 let zoneWidth = canvas.width / 5;
                 let active = (handX > (this.zone * zoneWidth) && handX < ((this.zone+1)*zoneWidth)) || isFist;
-                
                 ctx.save();
-                ctx.shadowBlur = active ? 25 : 5;
+                ctx.shadowBlur = active ? 40 : 5;
                 ctx.shadowColor = active ? "#fff" : "#00ffcc";
                 ctx.fillStyle = active ? "#fff" : "rgba(0, 255, 204, 0.4)";
-                ctx.font = `bold ${active ? this.size * 1.5 : this.size}px JetBrains Mono`;
+                ctx.font = `bold ${active ? this.size * 1.8 : this.size}px JetBrains Mono`;
                 ctx.fillText(CRYSTALS[this.zone], this.x, this.y);
                 ctx.restore();
             }
         }
 
         async function requestPermissions() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') initSensors();
-                } catch (e) { console.error(e); }
+            if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+                const p = await DeviceOrientationEvent.requestPermission();
+                if (p === 'granted') initSensors();
             } else { initSensors(); }
             initControllerMode();
         }
@@ -154,18 +206,17 @@
             peer = new Peer();
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
-                    <div class="p-6 border border-cyan-500 bg-black/80">
-                        <p class="text-xs opacity-50 uppercase mb-2">Stage Key:</p>
-                        <h2 class="text-6xl font-black mb-4">${id}</h2>
-                        <p class="animate-pulse text-cyan-400">WAITING FOR REMOTE...</p>
+                    <div class="p-10 border-2 border-cyan-500 bg-black shadow-[0_0_60px_rgba(0,255,204,0.15)]">
+                        <p class="text-[10px] opacity-40 uppercase mb-4 tracking-[4px]">ACCESS KEY</p>
+                        <h2 class="text-8xl font-black mb-8 text-white">${id}</h2>
+                        <p class="animate-pulse text-cyan-400 text-xs">PŘIPOJTE OVLADAČ...</p>
                     </div>`;
             });
             peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
 
         function initControllerMode() {
-            isController = true;
-            peer = new Peer();
+            isController = true; peer = new Peer();
             peer.on('open', () => {
                 const rId = document.getElementById('remote-id-input').value;
                 conn = peer.connect(rId);
@@ -182,8 +233,7 @@
 
         function initSensors() {
             window.addEventListener('deviceorientation', (e) => {
-                gravityX = (e.gamma / 45); 
-                gravityY = (e.beta / 45);
+                gravityX = (e.gamma / 45); gravityY = (e.beta / 45);
             });
         }
 
@@ -191,7 +241,6 @@
             document.getElementById('ui-layer').style.display = 'none';
             canvas.style.display = 'block';
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-
             if (isController) {
                 const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
                 hands.setOptions({ maxNumHands: 1, modelComplexity: 1 });
@@ -205,27 +254,16 @@
                 });
                 new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
             } else {
-                for(let i=0; i<80; i++) matrixDrops.push(new Drop());
+                for(let i=0; i<100; i++) matrixDrops.push(new Drop());
                 for(let i=0; i<150; i++) particles.push(new Particle());
                 render();
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Matrix Rain na pozadí
             matrixDrops.forEach(d => { d.update(); d.draw(); });
-
-            // Zóny
-            let zoneWidth = canvas.width / 5;
-            CRYSTALS.forEach((_, i) => {
-                let x = i * zoneWidth;
-                ctx.strokeStyle = (handX > x && handX < x + zoneWidth) ? "rgba(0, 255, 204, 0.5)" : "rgba(0, 255, 204, 0.05)";
-                ctx.strokeRect(x + 10, 50, zoneWidth - 20, canvas.height - 100);
-            });
-
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
