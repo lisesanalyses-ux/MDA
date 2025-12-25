@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v12</title>
+    <title>PF 2026 | AuraManifest Sync v13</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
         .menu-item {
             display: block; padding: 20px; margin-bottom: 10px; border: 1px solid rgba(0, 255, 204, 0.3);
             color: #00ffcc; text-decoration: none; font-size: 11px; text-transform: uppercase; cursor: pointer;
-            line-height: 1.4;
+            line-height: 1.4; transition: 0.3s;
         }
         .menu-item:hover { background: #00ffcc; color: #000; }
 
@@ -52,14 +52,16 @@
         .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 340px; text-align: center; font-size: 14px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px #00ffcc; }
         
-        /* KONTAKTY - 10% ROZESTUP OD STŘEDU */
+        /* KONTAKTY - ROZESTUP OD STŘEDU */
         .promo-bubble { 
             position: fixed; bottom: 8%; z-index: 1500; 
             background: rgba(0, 20, 20, 0.95); border: 2px solid #00ffcc; 
             padding: 12px 25px; border-radius: 50px; font-size: 11px; color: #00ffcc !important;
+            text-decoration: none; transition: 0.3s;
         }
-        #link-web { left: 30%; transform: translateX(-50%); }
-        #link-mail { right: 30%; transform: translateX(50%); }
+        .promo-bubble:hover { background: #00ffcc; color: #000 !important; }
+        #link-web { left: 25%; transform: translateX(-50%); }
+        #link-mail { right: 25%; transform: translateX(50%); }
 
         .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; }
         .flash { color: #ff00ff !important; text-shadow: 0 0 30px #ff00ff !important; }
@@ -72,7 +74,7 @@
     <nav id="side-menu">
         <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
         <div class="menu-item" onclick="location.reload()">00. RESET STAGE</div>
-        <div class="menu-item" onclick="window.location.href='AMM.html'">02. AuraAdmin | Cyberpunk Resonance</div>
+        <div class="menu-item" onclick="window.location.href='AuraManifest.html'">02. AuraAdmin | Cyberpunk Resonance</div>
         <div class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/', '_blank')">01. MDA REPOSITORY</div>
     </nav>
 
@@ -85,7 +87,7 @@
         <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-xs">AuraManifest Synchronization Engine</p>
         
         <div class="flex flex-col items-center">
-            <button class="btn" onclick="window.location.href='AMM.html'">[ AuraAdmin | Cyberpunk Resonance ]</button>
+            <button class="btn" onclick="window.location.href='AuraManifest.html'">[ AuraAdmin | Cyberpunk Resonance ]</button>
             <div class="h-px w-48 bg-cyan-900 my-6"></div>
             <input type="text" id="remote-id-input" placeholder="INSERT ID" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[340px] text-white outline-none">
             <button class="btn" onclick="alert('Sync Initialized')">[ SYNC NOKIA G42 ]</button>
@@ -93,7 +95,7 @@
     </div>
 
     <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">WEB: auraadmin.online</a>
-    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">KONTAKT: lisesanalyses@gmail.com</a>
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">KONTAKT</a>
 
     <canvas id="stage-canvas"></canvas>
 
@@ -144,6 +146,11 @@
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             for(let i=0; i<80; i++) drops.push(new Drop());
             render();
+        };
+
+        window.onresize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         };
     </script>
 </body>
