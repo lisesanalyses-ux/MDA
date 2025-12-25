@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v14</title>
+    <title>PF 2026 | AuraManifest Sync v15</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -14,21 +14,21 @@
         #ui-layer { 
             position: absolute; z-index: 50; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: radial-gradient(circle, rgba(5, 16, 16, 0.85) 0%, #000 100%);
+            background: radial-gradient(circle, rgba(5, 16, 16, 0.9) 0%, #000 100%);
             transition: opacity 1s ease-out;
         }
         
         .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 100%; text-align: center; font-size: 13px; letter-spacing: 2px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; }
         .btn-magenta { border-color: #ff00ff; color: #ff00ff; }
-        .btn-magenta:hover { background: #ff00ff; color: #000; box-shadow: 0 0 30px #ff00ff; }
 
-        .control-box { background: rgba(0, 20, 20, 0.4); border: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; width: 380px; transition: 0.4s; }
+        .control-box { background: rgba(0, 20, 20, 0.6); border: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; width: 380px; }
         #status-panel { display: none; margin-top: 15px; text-align: center; }
         #display-id { font-size: 2.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; letter-spacing: 4px; }
 
-        .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; }
-        .flash { color: #ff00ff !important; text-shadow: 0 0 40px #ff00ff !important; transform: scale(1.1); }
+        .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; z-index: 60; position: relative; pointer-events: none;}
+        .flash { color: #ff00ff !important; text-shadow: 0 0 50px #ff00ff !important; transform: scale(1.1); }
+        .hidden-important { display: none !important; }
     </style>
 </head>
 <body>
@@ -60,11 +60,10 @@
     <script>
         let peer, conn;
         let lastSend = 0;
-        const throttleMS = 30;
-        let tiltX = 0;
-        let isSynced = false;
+        let tiltX = 0, tiltY = 0;
+        let activeSync = false;
 
-        // OPRAVA 1: Inicializace režimu monitoru se správným callbackem
+        // NASTAVENÍ MONITORU (HOST)
         function initDisplayMode() {
             peer = new Peer();
             peer.on('open', (id) => {
@@ -74,21 +73,21 @@
 
             peer.on('connection', (c) => {
                 conn = c;
-                isSynced = true;
-                
-                // Vizuální přechod po spojení
-                document.getElementById('mode-selection').style.display = 'none';
-                document.getElementById('sub-title').innerText = "SYSTEM ONLINE // REMOTE LINK ESTABLISHED";
+                activeSync = true;
+                // Skryje UI a spustí show
+                document.getElementById('mode-selection').classList.add('hidden-important');
+                document.getElementById('sub-title').innerText = "SYSTEM ONLINE // STAGE ACTIVE";
                 document.getElementById('ui-layer').style.background = "transparent";
                 
                 conn.on('data', (data) => {
-                    tiltX = data.x;
+                    tiltX = data.x || 0;
+                    tiltY = data.y || 0;
                     triggerFlash();
                 });
             });
         }
 
-        // OPRAVA 2: Zajištění odesílání dat z mobilu
+        // NASTAVENÍ TELEFONU (REMOTE)
         async function initControllerMode() {
             const remoteId = document.getElementById('remote-id-input').value;
             if(!remoteId) return alert("Zadej ID z monitoru!");
@@ -104,12 +103,15 @@
             peer.on('open', () => {
                 conn = peer.connect(remoteId);
                 conn.on('open', () => {
-                    alert("SYNCHRONIZOVÁNO. Nakláněj telefon!");
+                    document.getElementById('mode-selection').innerHTML = "<p class='text-center uppercase text-emerald-400'>Synchronizováno!<br>Ovládej náklonem telefonu.</p>";
                     window.addEventListener('deviceorientation', (e) => {
                         const now = Date.now();
-                        if (now - lastSend > throttleMS) {
+                        if (now - lastSend > 30) {
                             if (conn && conn.open) {
-                                conn.send({ x: parseFloat(e.gamma.toFixed(2)) });
+                                conn.send({ 
+                                    x: parseFloat(e.gamma.toFixed(2)),
+                                    y: parseFloat(e.beta.toFixed(2))
+                                });
                                 lastSend = now;
                             }
                         }
@@ -121,13 +123,14 @@
         function triggerFlash() {
             const t = document.getElementById('main-title');
             t.classList.add('flash');
-            setTimeout(() => t.classList.remove('flash'), 150);
+            setTimeout(() => t.classList.remove('flash'), 100);
         }
 
-        // Matrix Engine
+        // VIZUÁLNÍ ENGINE (Sjednocení částic z AMM.html a Matrixu)
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         let drops = [];
+        const ASCII = ["2", "0", "2", "6", "PF", "∞", "SYNC"];
 
         class Drop {
             constructor() { this.reset(); }
@@ -135,20 +138,28 @@
                 this.x = Math.random() * canvas.width; 
                 this.y = Math.random() * -canvas.height; 
                 this.speed = Math.random() * 5 + 2; 
+                this.char = ASCII[Math.floor(Math.random()*ASCII.length)];
             }
             update() { 
                 this.y += this.speed; 
-                if(isSynced) this.x += (tiltX * 0.25); // Reakce na telefon
+                // Pokud je sync aktivní, reaguje na náklon
+                if(activeSync) {
+                    this.x += (tiltX * 0.3);
+                    this.y += (tiltY * 0.1);
+                }
                 if(this.y > canvas.height) this.reset();
+                if(this.x > canvas.width) this.x = 0;
+                if(this.x < 0) this.x = canvas.width;
             }
             draw() {
-                ctx.fillStyle = isSynced ? "#00ffcc" : "rgba(0, 255, 204, 0.15)";
-                ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
+                ctx.fillStyle = activeSync ? "#00ffcc" : "rgba(0, 255, 204, 0.15)";
+                ctx.font = "14px 'JetBrains Mono'";
+                ctx.fillText(this.char, this.x, this.y);
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
@@ -156,9 +167,10 @@
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<120; i++) drops.push(new Drop());
+            for(let i=0; i<150; i++) drops.push(new Drop());
             render();
         };
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     </script>
 </body>
 </html>
