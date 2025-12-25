@@ -12,45 +12,88 @@
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); }
-        .btn { border: 2px solid #00ffcc; padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); letter-spacing: 3px; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px rgba(0, 255, 204, 0.6); transform: scale(1.05); }
         
-        /* Styl pro menší kontaktní tlačítka pod syncem */
-        .btn-sm { border: 1px solid #00ffcc; padding: 8px 16px; font-size: 10px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #00ffcc; }
-        .btn-sm:hover { background: rgba(0, 255, 204, 0.2); box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); }
-        .btn-cyan { border-color: #00ffff; color: #00ffff; }
-        .btn-cyan:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
+        #sidebar {
+            position: fixed; left: -300px; top: 0; width: 300px; height: 100vh;
+            background: rgba(0, 10, 10, 0.95); border-right: 2px solid #00ffcc;
+            z-index: 200; transition: 0.4s cubic-bezier(0.85, 0, 0.15, 1);
+            backdrop-filter: blur(15px); padding: 80px 20px;
+        }
+        #sidebar.open { left: 0; box-shadow: 20px 0 50px rgba(0, 255, 204, 0.2); }
+        
+        .menu-trigger {
+            position: fixed; left: 20px; top: 20px; z-index: 210;
+            background: rgba(0,0,0,0.5); border: 2px solid #00ffcc; color: #00ffcc;
+            width: 45px; height: 45px; cursor: pointer; font-size: 24px;
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        }
+        .menu-trigger:hover { background: #00ffcc; color: #000; }
 
-        #peer-info { position: fixed; bottom: 20px; right: 20px; font-size: 10px; z-index: 100; color: rgba(0, 255, 204, 0.3); letter-spacing: 1px; }
+        .sidebar-link, .sidebar-btn {
+            display: block; width: 100%; text-align: left; color: #00ffcc; text-decoration: none; padding: 15px;
+            border: 1px solid rgba(0, 255, 204, 0.2); margin-bottom: 10px;
+            font-size: 11px; text-transform: uppercase; transition: 0.3s;
+            letter-spacing: 1px; background: transparent; cursor: pointer;
+        }
+        .sidebar-link:hover, .sidebar-btn:hover { background: rgba(0, 255, 204, 0.1); border-color: #00ffcc; padding-left: 25px; }
+        .sidebar-btn.active { background: rgba(0, 255, 204, 0.2); border-color: #fff; color: #fff; }
+
+        .btn { border: 2px solid #00ffcc; padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); letter-spacing: 3px; background: transparent; color: #00ffcc; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px rgba(0, 255, 204, 0.6); transform: scale(1.05); }
+        .btn-sm { border: 1px solid #00ffcc; padding: 8px 16px; font-size: 10px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #00ffcc; }
+        
         #remote-id-input { background: rgba(0, 255, 204, 0.05); border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; outline: none; width: 250px; font-weight: bold; }
-        .glitch-2026 { animation: neon 1.5s ease-in-out infinite alternate; color: #fff; text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
-        @keyframes neon { from { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; } to { text-shadow: 0 0 5px #00ffcc, 0 0 10px #00ffcc, 0 0 30px #ff00ff; } }
+        
+        .glitch-2026 { animation: neon-static 1.5s ease-in-out infinite alternate; color: #fff; }
+        @keyframes neon-static { 
+            from { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; } 
+            to { text-shadow: 0 0 5px #00ffcc, 0 0 15px #00ffcc, 0 0 25px #00ffcc; } 
+        }
+
+        #frame-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 300; background: #000; }
+        #manifest-frame { width: 100%; height: 100%; border: none; }
+
+        .close-btn {
+            position: absolute; left: 25px; top: 25px; z-index: 320; padding: 0 20px; height: 38px;
+            background: rgba(0, 20, 20, 0.8) !important; border: 1px solid #00ffcc !important;
+            border-radius: 20px; color: #00ffcc !important; font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease; backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+            text-shadow: none !important; animation: none !important;
+        }
+        .close-btn:hover { background: #00ffcc !important; color: #000 !important; box-shadow: 0 0 20px #00ffcc; }
+        .close-btn::before { content: '«'; margin-right: 8px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div id="peer-info">CORE ENGINE 2026 :: READY</div>
+    <button class="menu-trigger" onclick="toggleSidebar()">☰</button>
+
+    <nav id="sidebar">
+        <div class="mb-8 opacity-40 text-[10px] tracking-[4px]">CONTROL PANEL</div>
+        <button class="sidebar-link" onclick="openManifest()">[01] AuraManifest Doc</button>
+        <div class="h-px bg-emerald-900 my-4 opacity-30"></div>
+        <button class="sidebar-btn" onclick="calibrateGyro()">[02] Calibrate Sensors</button>
+        <button id="vibrate-toggle" class="sidebar-btn active" onclick="toggleVibrations()">[03] Haptic Feedback: ON</button>
+        <div class="h-px bg-emerald-900 my-4 opacity-30"></div>
+        <a href="#" onclick="location.reload()" class="sidebar-link">[04] Reboot Core</a>
+    </nav>
 
     <div id="ui-layer">
         <h1 class="text-6xl mb-2 font-black glitch-2026 text-center italic">PF 2026</h1>
-        <p class="mb-12 text-sm tracking-widest opacity-60 uppercase">The year of digital synchronicity</p>
-        
+        <p class="mb-12 text-sm tracking-widest opacity-60 uppercase text-center">Digital Synchronicity Interface</p>
         <div id="mode-selection" class="flex flex-col items-center">
             <button class="btn" onclick="initDisplayMode()">[ OPEN DISPLAY STAGE ]</button>
             <div class="h-px w-48 bg-emerald-900 my-8"></div>
-            
             <input type="text" id="remote-id-input" placeholder="INSERT STAGE ID">
             <button class="btn" onclick="initControllerMode()">[ SYNC AndroidOS/iOS ]</button>
-
-            <div class="flex gap-4 mt-6">
-                <a href="https://auraadmin.online" target="_blank" class="btn-sm">
-                    🌐 AURAADMIN.ONLINE
-                </a>
-                <a href="mailto:lisesanalyses@gmaill.com" class="btn-sm btn-cyan">
-                    ✉ GMAIL.COM
-                </a>
-            </div>
         </div>
+    </div>
+
+    <div id="frame-container">
+        <button onclick="closeFrame()" class="close-btn">Back to Menu</button>
+        <iframe id="manifest-frame" src=""></iframe>
     </div>
 
     <canvas id="stage-canvas"></canvas>
@@ -60,26 +103,86 @@
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         const videoElement = document.getElementById('input-video');
-        const peerInfo = document.getElementById('peer-info');
         
         let peer, conn, isController = false;
         let particles = [];
+        let matrixStreams = [];
         let handX = -1000, handY = -1000, isFist = false;
         let gravityX = 0, gravityY = 0.15;
-        let systemOverload = false;
+        let gyroOffset = { x: 0, y: 0 };
+        let vibrationsEnabled = true;
 
         const ASCII_2026 = ["2", "0", "2", "6", "∞", "Ͼ", "Ͽ", "∑", "†", "≈", "PF"];
+        const MATRIX_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
+
+        // Matrix Rain Třída
+        class MatrixStream {
+            constructor(x) {
+                this.x = x;
+                this.y = Math.random() * -1000;
+                this.speed = Math.random() * 2 + 2;
+                this.chars = [];
+                this.maxLength = Math.floor(Math.random() * 20) + 10;
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) {
+                    this.y = -100;
+                    this.x = Math.random() * canvas.width;
+                    this.speed = Math.random() * 2 + 2;
+                }
+            }
+            draw() {
+                ctx.font = "12px 'JetBrains Mono'";
+                for (let i = 0; i < this.maxLength; i++) {
+                    const charY = this.y - (i * 15);
+                    if (charY < 0 || charY > canvas.height) continue;
+
+                    // Náhodné zobrazení "2025" s glow efektem
+                    const isYear = Math.random() > 0.995;
+                    const char = isYear ? "2025" : MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+                    
+                    const opacity = 1 - (i / this.maxLength);
+                    ctx.fillStyle = isYear ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 255, 204, ${opacity * 0.3})`;
+                    
+                    if (isYear) {
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = "#00ffcc";
+                        ctx.font = "bold 14px 'JetBrains Mono'";
+                    } else {
+                        ctx.shadowBlur = 0;
+                        ctx.font = "12px 'JetBrains Mono'";
+                    }
+
+                    ctx.fillText(char, this.x, charY);
+                }
+                ctx.shadowBlur = 0; // Reset stínu
+            }
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        function openManifest() {
+            const container = document.getElementById('frame-container');
+            const frame = document.getElementById('manifest-frame');
+            frame.src = "https://lisesanalyses-ux.github.io/MDA/AuraManifest";
+            container.style.display = 'block';
+            if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+        }
+
+        function closeFrame() {
+            document.getElementById('frame-container').style.display = 'none';
+            document.getElementById('manifest-frame').src = "";
+        }
 
         function initDisplayMode() {
             peer = new Peer();
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
                     <div class="text-center p-10 border-2 border-dashed border-emerald-500 bg-black">
-                        <p class="text-xs uppercase mb-4 opacity-50">Stage Access Key:</p>
-                        <p class="text-7xl font-black text-white mb-6 tracking-tighter">${id}</p>
-                        <p class="animate-pulse text-emerald-400 text-xs">AWAITING CONTROLLER SIGNAL...</p>
+                        <p class="text-7xl font-black text-white mb-6">${id}</p>
+                        <p class="animate-pulse text-emerald-400 text-xs tracking-widest">AWAITING SYNC...</p>
                     </div>`;
-                peerInfo.innerText = "ACCESS ID: " + id;
             });
             peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
@@ -102,7 +205,6 @@
                 isFist = data.fist;
                 gravityX = data.gx;
                 gravityY = data.gy;
-                systemOverload = data.overload;
             });
         }
 
@@ -113,74 +215,52 @@
             canvas.height = window.innerHeight;
 
             if (isController) {
-                initSensors();
+                // ... (Kód ovladače zůstává stejný)
                 const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
                 hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
                 hands.onResults(res => {
                     if(res.multiHandLandmarks?.[0]) {
                         const lms = res.multiHandLandmarks[0];
-                        handX = (1 - lms[8].x);
-                        handY = lms[8].y;
+                        handX = (1 - lms[8].x); handY = lms[8].y;
                         isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.3);
                     } else { handX = -1000; }
-                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY, overload: systemOverload });
+                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
                 });
                 new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
             } else {
+                // Inicializace Matrix deště (pozadí)
+                for(let i=0; i < canvas.width / 20; i++) matrixStreams.push(new MatrixStream(i * 20));
+                // Inicializace PF 2026 částic (popředí)
                 for(let i=0; i<250; i++) particles.push(new Particle());
                 render();
             }
         }
 
-        function initSensors() {
-            window.addEventListener('deviceorientation', (e) => {
-                gravityX = (e.gamma / 45) * 0.25;
-                gravityY = (e.beta / 45) * 0.25;
-            });
-        }
-
         class Particle {
-            constructor() {
-                this.reset();
-                this.size = Math.random() * 12 + 12;
-            }
+            constructor() { this.reset(); this.size = Math.random() * 12 + 12; }
             reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.bx = this.x; this.by = this.y;
-                this.vx = 0; this.vy = 0;
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.bx = this.x; this.by = this.y; this.vx = 0; this.vy = 0;
                 this.char = ASCII_2026[Math.floor(Math.random() * ASCII_2026.length)];
             }
             update() {
                 let dx = handX - this.x, dy = handY - this.y;
                 let d = Math.hypot(dx, dy);
-                
                 if (d < 300 && handX > -500) {
                     let force = (300 - d) / 300;
-                    if (isFist) { 
-                        this.vx += (dx/d) * force * 18; 
-                        this.vy += (dy/d) * force * 18;
-                        this.char = "2026";
-                    } else { 
-                        this.vx -= (dx/d) * force * 14; 
-                        this.vy -= (dy/d) * force * 14;
-                    }
+                    if (isFist) { this.vx += (dx/d) * force * 18; this.vy += (dy/d) * force * 18; this.char = "2026"; }
+                    else { this.vx -= (dx/d) * force * 14; this.vy -= (dy/d) * force * 14; }
                 }
-
-                this.vx += (this.bx - this.x) * 0.04;
-                this.vy += (this.by - this.y) * 0.04;
+                this.vx += (this.bx - this.x) * 0.04; this.vy += (this.by - this.y) * 0.04;
                 this.vx *= 0.88; this.vy *= 0.88;
                 this.x += this.vx; this.y += this.vy;
-                
                 this.bx += gravityX * 3; this.by += gravityY * 3;
                 if (this.by > canvas.height) this.by = 0; else if (this.by < 0) this.by = canvas.height;
                 if (this.bx > canvas.width) this.bx = 0; else if (this.bx < 0) this.bx = canvas.width;
-
-                if(Math.random() > 0.98) this.char = ASCII_2026[Math.floor(Math.random() * ASCII_2026.length)];
             }
             draw() {
                 ctx.font = `${isFist ? this.size*1.2 : this.size}px 'JetBrains Mono'`;
-                ctx.fillStyle = isFist ? "#ff00ff" : (systemOverload ? "#fff" : "#00ffcc");
+                ctx.fillStyle = isFist ? "#ff00ff" : "#00ffcc";
                 ctx.shadowBlur = isFist ? 20 : 5;
                 ctx.shadowColor = ctx.fillStyle;
                 ctx.fillText(this.char, this.x, this.y);
@@ -188,9 +268,15 @@
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 5, 5, 0.2)';
+            ctx.fillStyle = 'rgba(0, 5, 5, 0.25)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 1. Vykreslení Matrix pozadí
+            matrixStreams.forEach(s => { s.update(); s.draw(); });
+            
+            // 2. Vykreslení interaktivních PF 2026 částic
             particles.forEach(p => { p.update(); p.draw(); });
+            
             requestAnimationFrame(render);
         }
 
