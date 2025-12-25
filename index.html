@@ -2,24 +2,21 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v9</title>
+    <title>PF 2026 | AuraManifest Sync v10</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <style>
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; display: block; }
         
-        /* SIDEBAR - OPRAVA FUNKČNOSTI */
+        /* SIDEBAR */
         #side-menu {
             position: fixed; left: -320px; top: 0; width: 300px; height: 100vh;
             background: rgba(0, 15, 15, 0.98); border-right: 2px solid #00ffcc;
             z-index: 2000; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1);
             padding: 100px 25px; box-shadow: 20px 0 80px rgba(0,0,0,1);
-            pointer-events: all;
         }
         #side-menu.open { left: 0; }
         
@@ -31,11 +28,12 @@
             border: 2px solid #00ffcc; border-radius: 15px; backdrop-filter: blur(10px);
         }
 
-        .menu-item {
-            display: block; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(0, 255, 204, 0.3);
-            color: #00ffcc; text-decoration: none; font-size: 13px; text-transform: uppercase; letter-spacing: 2px;
+        /* DYNAMICKÉ ČÍSELNÍKY VLEVO */
+        #number-stream {
+            position: absolute; left: 10%; top: 50%; transform: translateY(-50%);
+            z-index: 10; font-size: 4rem; font-weight: 800; color: rgba(0, 255, 204, 0.2);
+            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
         }
-        .menu-item:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
 
         /* UI LAYER */
         #ui-layer { 
@@ -45,24 +43,22 @@
         }
         #ui-layer * { pointer-events: auto; }
 
-        #manifest-text { font-size: 1.4rem; line-height: 1.6; max-width: 850px; margin-bottom: 50px; text-shadow: 0 0 15px #000, 0 0 10px #00ffcc; color: #00ffcc; font-weight: 800; text-align: center; }
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 12px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.8); color: #00ffcc; width: 320px; letter-spacing: 2px; }
+        #manifest-text { font-size: 1.2rem; line-height: 1.6; max-width: 700px; margin-bottom: 40px; text-shadow: 0 0 15px #000; color: #00ffcc; text-align: center; }
+        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 320px; letter-spacing: 2px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px #00ffcc; }
         
-        /* KONTROLA ROZESTUPU - 35% OD KRAJŮ */
+        /* ODKAZY S 10% ROZESTUPEM MEZI SEBOU */
         .promo-bubble { 
             position: fixed; bottom: 8%; z-index: 1500; 
-            background: rgba(0, 20, 20, 0.9); border: 2px solid #00ffcc; 
+            background: rgba(0, 20, 20, 0.95); border: 2px solid #00ffcc; 
             padding: 12px 25px; border-radius: 50px; font-size: 11px; 
             color: #00ffcc !important; text-decoration: none; backdrop-filter: blur(15px);
-            white-space: nowrap;
         }
-        /* Levý prvek 35% od levého okraje, pravý prvek 35% od pravého okraje */
-        #link-web { left: 35%; transform: translateX(-50%); }
-        #link-mail { right: 35%; transform: translateX(50%); }
+        #link-web { left: calc(45% - 160px); transform: translateX(-100%); }
+        #link-mail { right: calc(45% - 160px); transform: translateX(100%); }
 
-        .glitch-2026 { animation: neon 1.5s ease-in-out infinite alternate; color: #fff; font-weight: 900; font-style: italic; }
-        @keyframes neon { from { text-shadow: 0 0 10px #00ffcc; } to { text-shadow: 0 0 20px #00ffcc, 0 0 40px #ff00ff; } }
+        .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; text-shadow: 0 0 10px #00ffcc; }
+        .flash { color: #ff00ff !important; text-shadow: 0 0 30px #ff00ff !important; transform: scale(1.1); }
     </style>
 </head>
 <body>
@@ -70,18 +66,21 @@
     <div class="menu-trigger" onclick="toggleMenu()">☰</div>
     
     <nav id="side-menu">
-        <h3 class="text-xs opacity-50 mb-10 tracking-[6px] text-cyan-400">CORE INDEX</h3>
-        <a href="#" class="menu-item" onclick="location.reload()">00. RESET SYNC</a>
-        <a href="#" class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/', '_blank')">01. MDA REPO</a>
-        <a href="AMM.html" class="menu-item">02. OPEN AMM</a>
+        <h3 class="text-xs opacity-50 mb-10 tracking-[6px] text-cyan-400">INDEX</h3>
+        <a href="#" class="menu-item block p-4 border border-cyan-900 mb-2 hover:bg-cyan-400 hover:text-black" onclick="location.reload()">00. RESET</a>
+        <a href="AMM.html" class="menu-item block p-4 border border-cyan-900 mb-2 hover:bg-cyan-400 hover:text-black">02. OPEN AMM</a>
     </nav>
 
+    <div id="number-stream">
+        <div id="n1">0</div><div id="n2">0</div><div id="n3">0</div><div id="n4">0</div>
+    </div>
+
     <div id="ui-layer">
-        <h1 class="text-8xl mb-8 glitch-2026">PF 2026</h1>
-        <div id="manifest-text"></div>
+        <h1 id="main-title" class="text-8xl mb-8 glitch-2026">PF 2026</h1>
+        <div id="manifest-text">EVERYONE SHOULD ASK: IN WHAT SOCIETY DO WE WANT TO LIVE? REALITY IS FORMED BY OUR DAILY DEEDS.</div>
         <div class="flex flex-col items-center">
             <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ ]</button>
-            <input type="text" id="remote-id-input" placeholder="ZADEJ ID OBRAZOVKY" class="bg-black border-2 border-cyan-500 text-center p-4 my-4 w-[320px] text-white outline-none">
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID" class="bg-black border-2 border-cyan-500 text-center p-4 my-4 w-[320px] text-white">
             <button class="btn" onclick="requestPermissions()">[ 2. SYNC TELEFON ]</button>
         </div>
     </div>
@@ -92,70 +91,59 @@
     <canvas id="stage-canvas"></canvas>
 
     <script>
-        // DEFINICE FUNKCÍ - MUSÍ BÝT PŘED VOLÁNÍM
-        function toggleMenu() {
-            const menu = document.getElementById('side-menu');
-            menu.classList.toggle('open');
-        }
+        // GLOBÁLNÍ FUNKCE MENU
+        window.toggleMenu = function() {
+            document.getElementById('side-menu').classList.toggle('open');
+        };
 
-        const canvas = document.getElementById('stage-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [], matrixDrops = [];
-        const CRYSTALS = ["PF", "2", "0", "2", "6"];
-        const ASCII = "01ΣΔΦΨΩ†≈∞";
+        // ČÍSELNÁ PROMENA
+        const slots = ['n1', 'n2', 'n3', 'n4'];
+        function updateNumbers() {
+            let current = "";
+            slots.forEach(id => {
+                const val = Math.floor(Math.random() * 10);
+                document.getElementById(id).innerText = val;
+                current += val;
+            });
 
-        const manifestStr = "EVERYONE SHOULD ASK: IN WHAT SOCIETY DO WE WANT TO LIVE? REALITY IS FORMED BY OUR DAILY DEEDS AND THE VIBRATION WE SHARE.";
-        let charIdx = 0;
-        function typeManifest() {
-            if (charIdx < manifestStr.length) {
-                document.getElementById('manifest-text').innerHTML += manifestStr.charAt(charIdx);
-                charIdx++; setTimeout(typeManifest, 35);
+            if (current === "2026") {
+                const title = document.getElementById('main-title');
+                title.classList.add('flash');
+                setTimeout(() => title.classList.remove('flash'), 1000);
             }
         }
+        setInterval(updateNumbers, 150);
+
+        // POZADÍ ENGINE
+        const canvas = document.getElementById('stage-canvas');
+        const ctx = canvas.getContext('2d');
+        let drops = [];
 
         class Drop {
             constructor() { this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 2 + 1; this.char = ASCII[Math.floor(Math.random()*ASCII.length)]; }
+            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 3 + 2; }
             update() { this.y += this.speed; if (this.y > canvas.height) this.reset(); }
-            draw() { ctx.fillStyle = "rgba(0, 255, 204, 0.1)"; ctx.font = "12px monospace"; ctx.fillText(this.char, this.x, this.y); }
-        }
-
-        class Particle {
-            constructor() { this.zone = Math.floor(Math.random() * 5); this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.vx = 0; this.vy = 0; this.size = Math.random() * 20 + 30; }
-            update() {
-                let targetX = (this.zone * (canvas.width/5)) + (canvas.width/10);
-                let targetY = canvas.height/2;
-                this.vx += (targetX - this.x) * 0.02; this.vy += (targetY - this.y) * 0.02;
-                this.vx *= 0.9; this.vy *= 0.9;
-                this.x += this.vx; this.y += this.vy;
-            }
             draw() {
-                ctx.fillStyle = "rgba(0, 255, 204, 0.3)";
-                ctx.font = `bold ${this.size}px 'JetBrains Mono'`;
-                ctx.fillText(CRYSTALS[this.zone], this.x, this.y);
+                ctx.fillStyle = "rgba(0, 255, 204, 0.15)";
+                ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            matrixDrops.forEach(d => { d.update(); d.draw(); });
-            particles.forEach(p => { p.update(); p.draw(); });
+            drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
         }
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<60; i++) matrixDrops.push(new Drop());
-            for(let i=0; i<80; i++) particles.push(new Particle());
-            typeManifest();
+            for(let i=0; i<100; i++) drops.push(new Drop());
             render();
         };
 
-        // Propojení PeerJS (zjednodušené pro ukázku)
-        function initDisplayMode() { alert("Stage ID Generator Ready"); }
-        function requestPermissions() { alert("Sensor Sync Ready"); }
+        function initDisplayMode() { alert("Stage Ready"); }
+        function requestPermissions() { alert("Sync Ready"); }
     </script>
 </body>
 </html>
