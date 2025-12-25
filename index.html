@@ -13,36 +13,60 @@
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
         
-        /* UI VRSTVA */
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; text-align: center; padding: 20px; }
-        
         .btn { border: 2px solid #00ffcc; padding: 12px 24px; cursor: pointer; margin: 8px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 280px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
         
-        #remote-id-input { background: #111; border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; width: 280px; }
-        
-        /* PROMOTE ROZHRANÍ - FIXNÍ V ROHOCH */
-        .footer-link { 
+        /* NOVÉ BUBBLE TLAČÍTKA PRO PROMO */
+        .promo-bubble { 
             position: fixed; 
-            bottom: 30px; 
+            bottom: 12%; /* Výše od spodního okraje */
             z-index: 100; 
             color: #00ffcc; 
             text-decoration: none; 
-            font-size: 10px; 
-            letter-spacing: 2px; 
-            opacity: 0.7; 
-            transition: 0.3s; 
-            font-weight: 400;
+            font-size: 11px; 
+            letter-spacing: 1px; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(0, 255, 204, 0.05);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            padding: 15px 25px;
+            border-radius: 50px; /* Bubble tvar */
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .footer-link:hover { opacity: 1; text-shadow: 0 0 10px #00ffcc; }
-        #link-web { left: 40px; }
-        #link-mail { right: 40px; font-size: 22px; line-height: 0; }
+
+        /* Pozicování 35 % od okrajů */
+        #link-web { left: 30%; transform: translateX(-50%); }
+        #link-mail { right: 30%; transform: translateX(50%); }
+
+        .promo-bubble:hover { 
+            background: rgba(0, 255, 204, 0.2);
+            border-color: #00ffcc;
+            transform: translateY(-10px) scale(1.1) translateX(var(--tw-translate-x)); /* Zachová X posun a přidá Y efekt */
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
+            color: #fff;
+        }
+
+        .promo-bubble span { font-weight: 800; margin-right: 8px; }
+
+        @media (max-width: 768px) {
+            #link-web { left: 20%; }
+            #link-mail { right: 20%; }
+            .promo-bubble { padding: 10px 15px; font-size: 9px; }
+        }
     </style>
 </head>
 <body>
 
-    <a href="https://auraadmin.online" target="_blank" id="link-web" class="footer-link uppercase">auraadmin.online</a>
-    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="footer-link">✉</a>
+    <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">
+        <span>AURA</span> auraadmin.online
+    </a>
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">
+        <span style="font-size: 18px; margin: 0;">✉</span>
+    </a>
 
     <div id="ui-layer">
         <h1 class="text-5xl mb-2 font-black italic">PF 2026</h1>
@@ -52,13 +76,8 @@
             <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ / TV ]</button>
             <div class="h-px w-32 bg-gray-800 my-4"></div>
             
-            <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY">
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY" class="bg-black border-cyan-500 text-center p-2 mb-2">
             <button class="btn" onclick="requestPermissions()">[ 2. SYNC NOKIA / IPHONE ]</button>
-            
-            <p class="text-[9px] mt-6 opacity-40 max-w-[280px] leading-relaxed">
-                TIP: Po synchronizaci ovládejte krystaly pohyby ruky. <br>
-                iPhone uživatelé: Tlačítko 2 aktivuje senzory.
-            </p>
         </div>
     </div>
 
@@ -66,16 +85,17 @@
     <video id="input-video" playsinline style="display:none;"></video>
 
     <script>
+        // Logika PeerJS a částic zůstává stejná jako v předchozím funkčním kódu...
+        // (Zkráceno pro přehlednost, v ostrém souboru použij zbytek scriptu z minulé odpovědi)
+        
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         const videoElement = document.getElementById('input-video');
-        
         let peer, conn, isController = false;
         let particles = [];
         let handX = -1000, handY = -1000, isFist = false;
         let gravityX = 0, gravityY = 0;
         let audioCtx, oscillator, gainNode, filter;
-
         const CRYSTALS = ["PF", "2", "0", "2", "6"];
 
         async function requestPermissions() {
@@ -93,14 +113,11 @@
             oscillator = audioCtx.createOscillator();
             gainNode = audioCtx.createGain();
             filter = audioCtx.createBiquadFilter();
-            
             oscillator.type = 'sawtooth';
             filter.type = 'lowpass';
-            
             oscillator.connect(filter);
             filter.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
             gainNode.gain.value = 0;
             oscillator.start();
         }
@@ -110,15 +127,11 @@
             peer = new Peer();
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
-                    <p class="text-[10px] opacity-50 mb-1">AETHEREON ACCESS KEY:</p>
+                    <p class="text-[10px] opacity-50 mb-1 uppercase">Aethereon Sync Key:</p>
                     <h2 class="text-6xl font-bold mb-6 text-white tracking-tighter">${id}</h2>
-                    <p class="animate-pulse text-cyan-400 text-[10px] tracking-[0.3em]">WAITING FOR NOKIA / IPHONE...</p>`;
+                    <p class="animate-pulse text-cyan-400 text-[10px] tracking-[0.3em] uppercase">Connect Nokia / iPhone...</p>`;
             });
-            peer.on('connection', (c) => { 
-                conn = c; 
-                setupDataListener(); 
-                startEngine(); 
-            });
+            peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
 
         function initControllerMode() {
@@ -148,14 +161,13 @@
         async function startEngine() {
             document.getElementById('ui-layer').style.display = 'none';
             canvas.style.display = 'block';
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
             if (isController) {
-                // Skryjeme odkazy na ovladači (mobilu), aby plocha zůstala čistá pro senzory
+                // Skrytí promo prvků na ovladači
                 document.getElementById('link-web').style.display = 'none';
                 document.getElementById('link-mail').style.display = 'none';
-
+                
                 const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
                 hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5 });
                 hands.onResults(res => {
@@ -174,10 +186,7 @@
         }
 
         class Particle {
-            constructor() {
-                this.zone = Math.floor(Math.random() * 5);
-                this.reset();
-            }
+            constructor() { this.zone = Math.floor(Math.random() * 5); this.reset(); }
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
@@ -188,13 +197,8 @@
                 let zoneWidth = canvas.width / 5;
                 let targetX = (this.zone * zoneWidth) + (zoneWidth / 2) + (gravityX * 60);
                 let targetY = (canvas.height / 2) + (gravityY * 60);
-
-                if (isFist && handX > -500) {
-                    targetX = handX; targetY = handY;
-                }
-
-                this.vx += (targetX - this.x) * 0.03;
-                this.vy += (targetY - this.y) * 0.03;
+                if (isFist && handX > -500) { targetX = handX; targetY = handY; }
+                this.vx += (targetX - this.x) * 0.03; this.vy += (targetY - this.y) * 0.03;
                 this.vx *= 0.92; this.vy *= 0.92;
                 this.x += this.vx; this.y += this.vy;
             }
@@ -210,7 +214,6 @@
         function render() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             let zoneWidth = canvas.width / 5;
             CRYSTALS.forEach((_, i) => {
                 let x = i * zoneWidth;
@@ -227,7 +230,6 @@
             } else if(gainNode) {
                 gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
             }
-
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
