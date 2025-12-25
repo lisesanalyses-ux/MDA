@@ -2,62 +2,45 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Aura Resonance | PF 2026 Edition</title>
+    <title>PF 2026 | Aethereon Sync Edition</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00f2ff; touch-action: none; }
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-            background-size: 100% 3px, 3px 100%;
-            z-index: 30; pointer-events: none;
-        }
-        #ui-layer {
-            position: absolute; z-index: 50; width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #000; text-align: center;
-        }
-        .btn-cyber {
-            border: 2px solid #00f2ff; padding: 15px 40px; cursor: pointer;
-            text-transform: uppercase; font-weight: 800; transition: 0.3s;
-            background: rgba(0, 242, 255, 0.05); color: #00f2ff; letter-spacing: 3px;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-        }
-        .btn-cyber:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
-        .hud-overlay {
-            position: absolute; top: 20px; width: 100%; padding: 0 40px;
-            display: flex; justify-content: space-between; z-index: 40; pointer-events: none;
-            opacity: 0.7; font-size: 10px; text-transform: uppercase;
-        }
+        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; text-align: center; padding: 20px; }
+        .btn { border: 2px solid #00ffcc; padding: 12px 24px; cursor: pointer; margin: 8px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 280px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
+        #remote-id-input { background: #111; border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; width: 280px; }
+        
+        /* Nové UI prvky */
+        .footer-link { position: absolute; bottom: 30px; z-index: 60; color: #00ffcc; text-decoration: none; font-size: 10px; letter-spacing: 2px; opacity: 0.6; transition: 0.3s; display: none; }
+        .footer-link:hover { opacity: 1; text-shadow: 0 0 10px #00ffcc; }
+        #link-web { left: 40px; }
+        #link-mail { right: 40px; font-size: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="scanlines"></div>
-
     <div id="ui-layer">
-        <h1 class="text-6xl mb-4 font-black italic tracking-tighter">PF 2026</h1>
-        <p class="mb-12 opacity-50 tracking-[0.5em] text-xs">CYBERNETIC RESONANCE STAGE</p>
-        <button class="btn-cyber" onclick="initializeStage()">[ INITIALIZE SYSTEM ]</button>
+        <h1 class="text-5xl mb-2 font-black italic">PF 2026</h1>
+        <p class="mb-8 text-xs tracking-widest opacity-50 uppercase">Aethereon Audio-Visual Sync</p>
+        
+        <div id="mode-selection" class="flex flex-col items-center">
+            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT AETHEREON STAGE ]</button>
+            <div class="h-px w-32 bg-gray-800 my-4"></div>
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY">
+            <button id="ios-btn" class="btn" onclick="requestPermissions()">[ 2. SYNC NOKIA / IPHONE ]</button>
+            <p class="text-[10px] mt-4 opacity-40 italic">TIP: Krystaly reagují na pozici vaší ruky přes Peer Link.</p>
+        </div>
     </div>
 
-    <div id="hud" class="hud-overlay" style="display:none;">
-        <div class="border-l-2 border-cyan-500 pl-4">
-            System: <span class="text-white">Active</span><br>
-            Link: <span class="animate-pulse text-white">Hand Tracking</span>
-        </div>
-        <div class="text-right border-r-2 border-cyan-500 pr-4">
-            Aura: <span id="mod-val" class="text-white">0%</span><br>
-            Vector: <span id="tone-val" class="text-white">X-Axis Ready</span>
-        </div>
-    </div>
+    <a href="https://auraadmin.online" target="_blank" id="link-web" class="footer-link uppercase">auraadmin.online</a>
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="footer-link">✉</a>
 
     <canvas id="stage-canvas"></canvas>
     <video id="input-video" playsinline style="display:none;"></video>
@@ -67,135 +50,174 @@
         const ctx = canvas.getContext('2d');
         const videoElement = document.getElementById('input-video');
         
-        let handX = -1000, handY = -1000;
-        let audioCtx, mainGain, reverbNode;
-        const voices = {};
-        const CRYSTALS = [
-            { f: 130.81, label: 'PF' }, { f: 164.81, label: '2' }, 
-            { f: 196.00, label: '0' }, { f: 246.94, label: '2' }, { f: 293.66, label: '6' }
-        ];
+        let peer, conn, isController = false;
+        let particles = [];
+        let handX = -1000, handY = -1000, isFist = false;
+        let gravityX = 0, gravityY = 0.1;
+        
+        let audioCtx, oscillator, gainNode, biquadFilter;
+        const CRYSTAL_LABELS = ["PF", "2", "0", "2", "6"];
+
+        async function requestPermissions() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') initSensors();
+                } catch (e) { console.error(e); }
+            } else { initSensors(); }
+            initControllerMode();
+        }
 
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            mainGain = audioCtx.createGain();
-            mainGain.gain.value = 0.4;
-            reverbNode = audioCtx.createDelay();
-            const feedback = audioCtx.createGain();
-            reverbNode.delayTime.value = 0.3;
-            feedback.gain.value = 0.4;
-            reverbNode.connect(feedback);
-            feedback.connect(reverbNode);
-            mainGain.connect(audioCtx.destination);
-            mainGain.connect(reverbNode);
-            reverbNode.connect(audioCtx.destination);
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            biquadFilter = audioCtx.createBiquadFilter();
+            oscillator.type = 'triangle';
+            biquadFilter.type = "lowpass";
+            oscillator.connect(biquadFilter);
+            biquadFilter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            oscillator.start();
         }
 
-        function updateVoice(id, intensity, yPos) {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            if (!voices[id]) {
-                const osc = audioCtx.createOscillator();
-                const filter = audioCtx.createBiquadFilter();
-                const vGain = audioCtx.createGain();
-                osc.type = 'triangle';
-                filter.type = 'lowpass';
-                vGain.gain.value = 0;
-                osc.connect(filter); filter.connect(vGain);
-                vGain.connect(mainGain);
-                osc.start();
-                voices[id] = { osc, filter, vGain, baseFreq: CRYSTALS[id].f };
-            }
-            const v = voices[id];
-            if (intensity > 0.1) {
-                v.osc.frequency.setTargetAtTime(v.baseFreq, now, 0.1);
-                v.filter.frequency.setTargetAtTime(400 + (1 - yPos) * 4000, now, 0.1);
-                v.vGain.gain.setTargetAtTime(intensity * 0.3, now, 0.1);
-            } else {
-                v.vGain.gain.setTargetAtTime(0, now, 0.2);
-            }
-        }
-
-        async function initializeStage() {
+        function initDisplayMode() {
             initAudio();
+            peer = new Peer();
+            peer.on('open', (id) => {
+                document.getElementById('mode-selection').innerHTML = `
+                    <p class="text-xs mb-2 uppercase opacity-50 text-cyan-500">Aethereon Access Key:</p>
+                    <h2 class="text-6xl font-bold mb-6 text-white tracking-tighter">${id}</h2>
+                    <p class="animate-pulse text-cyan-400 uppercase text-[10px] tracking-widest">Čekám na spojení s ovladačem...</p>`;
+            });
+            peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
+        }
+
+        function initControllerMode() {
+            isController = true;
+            peer = new Peer();
+            peer.on('open', () => {
+                const rId = document.getElementById('remote-id-input').value;
+                conn = peer.connect(rId);
+                conn.on('open', () => startEngine());
+            });
+        }
+
+        function setupDataListener() {
+            conn.on('data', (d) => {
+                handX = d.x * canvas.width; handY = d.y * canvas.height;
+                isFist = d.fist; gravityX = d.gx; gravityY = d.gy;
+            });
+        }
+
+        function initSensors() {
+            window.addEventListener('deviceorientation', (e) => {
+                gravityX = (e.gamma / 45) * 0.3;
+                gravityY = (e.beta / 45) * 0.3;
+            });
+        }
+
+        async function startEngine() {
             document.getElementById('ui-layer').style.display = 'none';
-            document.getElementById('hud').style.display = 'flex';
+            document.querySelectorAll('.footer-link').forEach(el => el.style.display = 'block');
             canvas.style.display = 'block';
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-            const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-            hands.setOptions({ maxNumHands: 1, modelComplexity: 1 });
-            hands.onResults(res => {
-                if(res.multiHandLandmarks?.[0]) {
-                    const t = res.multiHandLandmarks[0][8];
-                    handX = (1 - t.x) * canvas.width;
-                    handY = t.y * canvas.height;
-                    let zoneWidth = canvas.width / 5;
-                    let zoneIndex = Math.floor(handX / zoneWidth);
-                    CRYSTALS.forEach((_, i) => {
-                        let intensity = (i === zoneIndex) ? 0.8 : 0;
-                        updateVoice(i, intensity, handY / canvas.height);
-                    });
-                    document.getElementById('mod-val').innerText = Math.round((1 - t.y) * 100) + "%";
-                } else {
-                    handX = -1000;
-                    CRYSTALS.forEach((_, i) => updateVoice(i, 0, 0.5));
+            if (isController) {
+                const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5 });
+                hands.onResults(res => {
+                    if(res.multiHandLandmarks?.[0]) {
+                        const lms = res.multiHandLandmarks[0];
+                        handX = (1 - lms[8].x); handY = lms[8].y;
+                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.25);
+                    } else { handX = -1000; }
+                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
+                });
+
+                const camera = new Camera(videoElement, {
+                    onFrame: async () => { await hands.send({image: videoElement}); },
+                    width: 320, height: 240
+                });
+                camera.start();
+            } else {
+                for(let i=0; i<150; i++) particles.push(new Particle());
+                render();
+            }
+        }
+
+        class Particle {
+            constructor() { 
+                this.reset(); 
+                this.size = Math.random() * 5 + 10; 
+                this.zone = Math.floor(Math.random() * 5);
+            }
+            reset() {
+                this.x = Math.random() * canvas.width; 
+                this.y = Math.random() * canvas.height;
+                this.vx = 0; this.vy = 0;
+            }
+            update() {
+                let zoneWidth = canvas.width / 5;
+                let targetX = (this.zone * zoneWidth) + (zoneWidth / 2) + (Math.random() - 0.5) * 60;
+                let targetY = canvas.height / 2 + (Math.random() - 0.5) * 150;
+
+                // Reakce na pěst - shluknutí do středu roku 2026
+                if(isFist && handX > -500) {
+                    targetX = canvas.width/2 + (Math.random()-0.5)*300;
+                    targetY = canvas.height/2 + (Math.random()-0.5)*100;
                 }
-            });
 
-            const camera = new Camera(videoElement, {
-                onFrame: async () => { await hands.send({image: videoElement}); },
-                width: 640, height: 480
-            });
-            camera.start();
-            render();
+                this.vx += (targetX - this.x) * 0.02;
+                this.vy += (targetY - this.y) * 0.02;
+                this.vx *= 0.9; this.vy *= 0.9;
+                this.x += this.vx; this.y += this.vy;
+            }
+            draw() {
+                let zoneWidth = canvas.width / 5;
+                let isActive = handX > (this.zone * zoneWidth) && handX < ((this.zone + 1) * zoneWidth);
+                ctx.fillStyle = isActive || isFist ? "#fff" : "rgba(0, 255, 204, 0.3)";
+                ctx.font = `${this.size}px JetBrains Mono`;
+                ctx.fillText(CRYSTAL_LABELS[this.zone], this.x, this.y);
+            }
         }
 
         function render() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+            
             let zoneWidth = canvas.width / 5;
 
-            CRYSTALS.forEach((c, i) => {
+            // Krystaly na pozadí
+            CRYSTAL_LABELS.forEach((label, i) => {
                 let x = i * zoneWidth;
                 let isActive = handX > x && handX < x + zoneWidth;
-
-                // Vykreslení krystalu
-                ctx.strokeStyle = isActive ? '#00f2ff' : 'rgba(0, 242, 255, 0.15)';
-                ctx.lineWidth = isActive ? 4 : 1;
                 
-                if (isActive) {
-                    ctx.shadowBlur = 40;
-                    ctx.shadowColor = '#00f2ff';
-                    ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
-                    ctx.fillRect(x + 15, 60, zoneWidth - 30, canvas.height - 120);
-                } else {
+                ctx.strokeStyle = isActive ? "#00ffcc" : "rgba(0, 255, 204, 0.1)";
+                ctx.lineWidth = isActive ? 3 : 1;
+                ctx.strokeRect(x + 20, 80, zoneWidth - 40, canvas.height - 160);
+                
+                if(isActive) {
+                    ctx.shadowBlur = 20; ctx.shadowColor = "#00ffcc";
+                    ctx.fillStyle = "rgba(0, 255, 204, 0.05)";
+                    ctx.fillRect(x + 20, 80, zoneWidth - 40, canvas.height - 160);
                     ctx.shadowBlur = 0;
                 }
-                ctx.strokeRect(x + 15, 60, zoneWidth - 30, canvas.height - 120);
-
-                // Znaky PF 2026
-                ctx.textAlign = "center";
-                ctx.font = isActive ? "900 110px JetBrains Mono" : "400 60px JetBrains Mono";
-                ctx.fillStyle = isActive ? "#ffffff" : "rgba(0, 242, 255, 0.3)";
-                ctx.fillText(c.label, x + zoneWidth / 2, canvas.height / 2 + 30);
-                
-                // Popisky tónů dole
-                ctx.font = "10px JetBrains Mono";
-                ctx.fillStyle = isActive ? "#00f2ff" : "rgba(0, 242, 255, 0.1)";
-                ctx.fillText("OSC_RES_" + i, x + zoneWidth / 2, canvas.height - 85);
             });
 
-            // Glow na prstu
-            if (handX > 0) {
-                ctx.shadowBlur = 25;
-                ctx.shadowColor = '#fff';
-                ctx.beginPath();
-                ctx.arc(handX, handY, 12, 0, Math.PI * 2);
-                ctx.fillStyle = '#fff';
-                ctx.fill();
+            // Částice (Znaky)
+            particles.forEach(p => { p.update(); p.draw(); });
+
+            // Zvuková modulace přes Peer link
+            if(audioCtx && handX > -500) {
+                let freq = 150 + (1 - handY / canvas.height) * 400;
+                oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.1);
+                gainNode.gain.setTargetAtTime(isFist ? 0.15 : 0.05, audioCtx.currentTime, 0.1);
+            } else if (gainNode) {
+                gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
             }
+
             requestAnimationFrame(render);
         }
     </script>
