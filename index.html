@@ -21,14 +21,12 @@
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); transition: 0.5s; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; display: none; }
 
-        /* iFrame Dokument kontejner */
         #doc-frame-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 150; display: none; background: #000;
         }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Sidebar */
         #sidebar {
             position: fixed; left: -300px; top: 0; width: 300px; height: 100vh;
             background: rgba(0, 10, 10, 0.95); border-right: 2px solid var(--aura-cyan);
@@ -43,7 +41,6 @@
             width: 45px; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s;
         }
 
-        /* OVÁLNÁ TLAČÍTKA */
         .btn-oval {
             border: 1px solid var(--aura-cyan);
             padding: 10px 25px; border-radius: 50px;
@@ -55,7 +52,6 @@
         }
         .btn-oval:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 25px var(--aura-cyan); transform: translateY(-2px); }
 
-        /* FIXNÍ TLAČÍTKO ZPĚT (vždy navrchu i nad framem) */
         #back-to-menu-global {
             position: fixed; top: 20px; right: 20px; z-index: 500; display: none;
         }
@@ -70,7 +66,7 @@
         }
         .sidebar-link:hover { background: rgba(0, 242, 255, 0.1); border-color: var(--aura-cyan); padding-left: 25px; }
 
-        #remote-id-input { background: rgba(0, 242, 255, 0.05); border: 1px solid var(--aura-cyan); color: #fff; padding: 12px; text-align: center; width: 250px; }
+        #remote-id-input { background: rgba(0, 242, 255, 0.05); border: 1px solid var(--aura-cyan); color: #fff; padding: 12px; text-align: center; width: 250px; outline: none; }
         .id-display { font-family: 'Share Tech Mono', monospace; font-size: 3.5rem; letter-spacing: 12px; color: #fff; text-shadow: 0 0 20px var(--aura-cyan); }
     </style>
 </head>
@@ -108,7 +104,7 @@
         <div id="mode-selection" class="flex flex-col items-center">
             <button class="btn" onclick="initDisplayMode()">[ OPEN DISPLAY STAGE ]</button>
             <div class="h-px w-48 bg-cyan-900 my-8"></div>
-            <input type="text" id="remote-id-input" placeholder="INSERT 6-CHAR ID">
+            <input type="text" id="remote-id-input" placeholder="INSERT 4-CHAR ID">
             <button class="btn" onclick="initControllerMode()">[ SYNC MOBILE DEVICE ]</button>
             
             <div class="mt-12">
@@ -135,7 +131,6 @@
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         
-        // Funkce pro otevření iFramu
         function openDocFrame(url) {
             const container = document.getElementById('doc-frame-container');
             const iframe = document.getElementById('doc-iframe');
@@ -147,16 +142,19 @@
             if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
         }
 
-        // Návrat do menu ze všeho (Stage i iFramu)
         function closeAllAndReturn() {
-            location.reload(); // Nejbezpečnější způsob pro reset PeerJS a stavů
+            location.reload(); 
         }
 
-        function generateId() { return Math.random().toString(36).substr(2, 6).toUpperCase(); }
+        // 1. ZKRÁCENÍ ID NA 4 ZNAKY
+        function generateId() { 
+            return Math.random().toString(36).substr(2, 4).toUpperCase(); 
+        }
 
         function initDisplayMode() {
-            const shortId = generateId();
-            peer = new Peer(shortId);
+            const shortId = generateId(); 
+            peer = new Peer(shortId); 
+            
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
                     <div class="text-center p-10 border border-cyan-500/30 bg-cyan-500/5 backdrop-blur-md">
@@ -165,23 +163,53 @@
                         <p class="animate-pulse text-cyan-400 text-xs tracking-widest uppercase">Awaiting Remote Sync...</p>
                     </div>`;
             });
-            peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
+
+            peer.on('connection', (c) => { 
+                conn = c; 
+                setupDataListener(); 
+                startEngine(); 
+            });
+
+            peer.on('error', (err) => {
+                console.error("PeerJS Error:", err);
+                if(err.type === 'unavailable-id') {
+                    initDisplayMode();
+                }
+            });
         }
 
         async function initControllerMode() {
-            const remoteId = document.getElementById('remote-id-input').value.toUpperCase();
+            const remoteId = document.getElementById('remote-id-input').value.toUpperCase().trim();
             if(!remoteId) return alert("ID Required");
+
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const permissionState = await DeviceOrientationEvent.requestPermission();
-                    if (permissionState === 'granted') { window.addEventListener('deviceorientation', handleOrientation); }
+                    if (permissionState === 'granted') { 
+                        window.addEventListener('deviceorientation', handleOrientation); 
+                    }
                 } catch (e) { console.error(e); }
-            } else { window.addEventListener('deviceorientation', handleOrientation); }
+            } else { 
+                window.addEventListener('deviceorientation', handleOrientation); 
+            }
+
             isController = true;
-            peer = new Peer();
+            peer = new Peer(); 
+
             peer.on('open', () => {
-                conn = peer.connect(remoteId);
-                conn.on('open', () => { startEngine(); });
+                console.log("Controller Peer opened, connecting to:", remoteId);
+                conn = peer.connect(remoteId, {
+                    reliable: true
+                });
+                
+                conn.on('open', () => { 
+                    console.log("Connected to Stage!");
+                    startEngine(); 
+                });
+
+                conn.on('error', (err) => {
+                    alert("Connection failed: " + err);
+                });
             });
         }
 
