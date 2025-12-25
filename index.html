@@ -96,7 +96,7 @@
             
             <div class="control-box">
                 <p class="text-[9px] text-cyan-400 mb-4 tracking-widest uppercase border-b border-cyan-900 pb-2">Step 01 // Host Device Mode</p>
-                <button class="btn" onclick="initDisplayMode()">[ Open Your Screen Stage ]</button>
+                <button class="btn" onclick="initDisplayMode()">[ Open Display Stage ]</button>
                 <div id="status-panel">
                     <p class="text-[9px] uppercase opacity-50 mb-1">Access Key for Remote:</p>
                     <span id="display-id">---</span>
@@ -128,7 +128,8 @@
     <script>
         let peer, conn;
         let lastSend = 0;
-        const throttleMS = 30; // Omezit odesílání na cca 33 FPS
+        const throttleMS = 30;
+        let tiltX = 0; // Pro pohyb kapek Matrixu
         
         function initDisplayMode() {
             peer = new Peer();
@@ -139,11 +140,14 @@
             peer.on('connection', (c) => {
                 conn = c;
                 conn.on('data', (data) => {
-                    // Tady Screen přijímá data x a y
-                    console.log("Remote Input:", data);
+                    // Přijímáme náklon a ukládáme ho do globální proměnné
+                    tiltX = data.x;
                     triggerFlash();
                 });
-                document.getElementById('ui-layer').classList.add('hidden');
+                // Skrytí celého UI po úspěšném spojení
+                document.getElementById('ui-layer').style.display = 'none';
+                document.querySelector('.menu-trigger').style.display = 'none';
+                document.getElementById('number-stream').style.display = 'none';
             });
         }
 
@@ -163,7 +167,6 @@
                     alert("SYNCHRONIZOVÁNO. Nakláněj telefon!");
                     window.addEventListener('deviceorientation', (e) => {
                         const now = Date.now();
-                        // Kontrola throttlingu: odeslat jen pokud uplynulo více než 30ms
                         if (now - lastSend > throttleMS) {
                             if (conn && conn.open) {
                                 conn.send({ 
@@ -188,29 +191,43 @@
 
         window.toggleMenu = () => document.getElementById('side-menu').classList.toggle('open');
 
-        // Matrix background logic
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         let drops = [];
+
         class Drop {
             constructor() { this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 4 + 2; }
-            update() { this.y += this.speed; if(this.y > canvas.height) this.reset(); }
+            reset() { 
+                this.x = Math.random() * canvas.width; 
+                this.y = Math.random() * -canvas.height; 
+                this.speed = Math.random() * 4 + 2; 
+            }
+            update() { 
+                this.y += this.speed; 
+                // Zde přidáváme vliv náklonu telefonu na pohyb kapky do stran
+                this.x += (tiltX * 0.2); 
+                
+                if(this.y > canvas.height) this.reset();
+                if(this.x > canvas.width) this.x = 0;
+                if(this.x < 0) this.x = canvas.width;
+            }
             draw() {
-                ctx.fillStyle = "rgba(0, 255, 204, 0.15)";
+                ctx.fillStyle = "rgba(0, 255, 204, 0.25)";
                 ctx.font = "14px monospace";
                 ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
             }
         }
+
         function render() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
         }
+
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<80; i++) drops.push(new Drop());
+            for(let i=0; i<100; i++) drops.push(new Drop());
             render();
             setInterval(() => {
                 const slots = ['n1', 'n2', 'n3', 'n4'];
