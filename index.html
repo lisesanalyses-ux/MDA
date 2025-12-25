@@ -7,93 +7,116 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; }
-        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
-        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); }
+        :root { --aura-cyan: #00f2ff; --aura-magenta: #ff00ff; }
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: var(--aura-cyan); }
         
+        .scanlines::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
+            z-index: 1000; background-size: 100% 3px; pointer-events: none;
+        }
+
+        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); transition: 0.5s; }
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; display: none; }
+
+        /* iFrame Dokument kontejner */
+        #doc-frame-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 150; display: none; background: #000;
+        }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Sidebar */
         #sidebar {
             position: fixed; left: -300px; top: 0; width: 300px; height: 100vh;
-            background: rgba(0, 10, 10, 0.95); border-right: 2px solid #00ffcc;
+            background: rgba(0, 10, 10, 0.95); border-right: 2px solid var(--aura-cyan);
             z-index: 200; transition: 0.4s cubic-bezier(0.85, 0, 0.15, 1);
-            backdrop-filter: blur(15px); padding: 80px 20px;
+            backdrop-filter: blur(15px); padding: 80px 20px; display: flex; flex-direction: column;
         }
-        #sidebar.open { left: 0; box-shadow: 20px 0 50px rgba(0, 255, 204, 0.2); }
+        #sidebar.open { left: 0; box-shadow: 20px 0 50px rgba(0, 242, 255, 0.2); }
         
         .menu-trigger {
             position: fixed; left: 20px; top: 20px; z-index: 210;
-            background: rgba(0,0,0,0.5); border: 2px solid #00ffcc; color: #00ffcc;
-            width: 45px; height: 45px; cursor: pointer; font-size: 24px;
-            display: flex; align-items: center; justify-content: center; transition: 0.3s;
-        }
-        .menu-trigger:hover { background: #00ffcc; color: #000; }
-
-        .sidebar-link, .sidebar-btn {
-            display: block; width: 100%; text-align: left; color: #00ffcc; text-decoration: none; padding: 15px;
-            border: 1px solid rgba(0, 255, 204, 0.2); margin-bottom: 10px;
-            font-size: 11px; text-transform: uppercase; transition: 0.3s;
-            letter-spacing: 1px; background: transparent; cursor: pointer;
-        }
-        .sidebar-link:hover, .sidebar-btn:hover { background: rgba(0, 255, 204, 0.1); border-color: #00ffcc; padding-left: 25px; }
-        .sidebar-btn.active { background: rgba(0, 255, 204, 0.2); border-color: #fff; color: #fff; }
-
-        .btn { border: 2px solid #00ffcc; padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); letter-spacing: 3px; background: transparent; color: #00ffcc; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px rgba(0, 255, 204, 0.6); transform: scale(1.05); }
-        .btn-sm { border: 1px solid #00ffcc; padding: 8px 16px; font-size: 10px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #00ffcc; }
-        
-        #remote-id-input { background: rgba(0, 255, 204, 0.05); border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; outline: none; width: 250px; font-weight: bold; }
-        
-        .glitch-2026 { animation: neon-static 1.5s ease-in-out infinite alternate; color: #fff; }
-        @keyframes neon-static { 
-            from { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; } 
-            to { text-shadow: 0 0 5px #00ffcc, 0 0 15px #00ffcc, 0 0 25px #00ffcc; } 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--aura-cyan); color: var(--aura-cyan);
+            width: 45px; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s;
         }
 
-        #frame-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 300; background: #000; }
-        #manifest-frame { width: 100%; height: 100%; border: none; }
-
-        .close-btn {
-            position: absolute; left: 25px; top: 25px; z-index: 320; padding: 0 20px; height: 38px;
-            background: rgba(0, 20, 20, 0.8) !important; border: 1px solid #00ffcc !important;
-            border-radius: 20px; color: #00ffcc !important; font-family: 'JetBrains Mono', monospace;
-            font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.3s ease; backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
-            text-shadow: none !important; animation: none !important;
+        /* OVÁLNÁ TLAČÍTKA */
+        .btn-oval {
+            border: 1px solid var(--aura-cyan);
+            padding: 10px 25px; border-radius: 50px;
+            font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+            text-decoration: none; color: var(--aura-cyan);
+            background: rgba(0, 242, 255, 0.1); transition: all 0.4s ease;
+            display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
         }
-        .close-btn:hover { background: #00ffcc !important; color: #000 !important; box-shadow: 0 0 20px #00ffcc; }
-        .close-btn::before { content: '«'; margin-right: 8px; font-size: 14px; }
+        .btn-oval:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 25px var(--aura-cyan); transform: translateY(-2px); }
+
+        /* FIXNÍ TLAČÍTKO ZPĚT (vždy navrchu i nad framem) */
+        #back-to-menu-global {
+            position: fixed; top: 20px; right: 20px; z-index: 500; display: none;
+        }
+
+        .btn { border: 1px solid var(--aura-cyan); padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s; letter-spacing: 3px; background: transparent; color: var(--aura-cyan); }
+        .btn:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 30px var(--aura-cyan); }
+
+        .sidebar-link {
+            display: block; width: 100%; text-align: left; color: var(--aura-cyan); padding: 15px;
+            border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 10px; font-size: 11px; text-transform: uppercase; transition: 0.3s;
+            background: transparent; cursor: pointer;
+        }
+        .sidebar-link:hover { background: rgba(0, 242, 255, 0.1); border-color: var(--aura-cyan); padding-left: 25px; }
+
+        #remote-id-input { background: rgba(0, 242, 255, 0.05); border: 1px solid var(--aura-cyan); color: #fff; padding: 12px; text-align: center; width: 250px; }
+        .id-display { font-family: 'Share Tech Mono', monospace; font-size: 3.5rem; letter-spacing: 12px; color: #fff; text-shadow: 0 0 20px var(--aura-cyan); }
     </style>
 </head>
-<body>
+<body class="scanlines">
 
     <button class="menu-trigger" onclick="toggleSidebar()">☰</button>
 
+    <div id="back-to-menu-global">
+        <button class="btn-oval" onclick="closeAllAndReturn()">
+            <span class="text-xs">⟲</span> BACK TO MENU
+        </button>
+    </div>
+
+    <div id="doc-frame-container">
+        <iframe id="doc-iframe" src=""></iframe>
+    </div>
+
     <nav id="sidebar">
         <div class="mb-8 opacity-40 text-[10px] tracking-[4px]">CONTROL PANEL</div>
-        <button class="sidebar-link" onclick="openManifest()">[01] AuraManifest Doc</button>
-        <div class="h-px bg-emerald-900 my-4 opacity-30"></div>
-        <button class="sidebar-btn" onclick="calibrateGyro()">[02] Calibrate Sensors</button>
-        <button id="vibrate-toggle" class="sidebar-btn active" onclick="toggleVibrations()">[03] Haptic Feedback: ON</button>
-        <div class="h-px bg-emerald-900 my-4 opacity-30"></div>
-        <a href="#" onclick="location.reload()" class="sidebar-link">[04] Reboot Core</a>
+        <button class="sidebar-link" onclick="openDocFrame('https://lisesanalyses-ux.github.io/MDA/AuraManifest')">[01] AuraManifest Doc</button>
+        <div class="h-px bg-cyan-900 my-4 opacity-30"></div>
+        <button class="sidebar-link" onclick="location.reload()">[02] Reboot Core</button>
+        
+        <div class="mt-auto pb-10 flex flex-col gap-4">
+            <a href="mailto:lisesanalyses@gmail.com" class="btn-oval">
+                <span class="text-lg">✉</span> lisesanalyses@gmail.com
+            </a>
+        </div>
     </nav>
 
     <div id="ui-layer">
-        <h1 class="text-6xl mb-2 font-black glitch-2026 text-center italic">PF 2026</h1>
+        <h1 class="text-6xl mb-2 font-black text-center italic tracking-widest" style="text-shadow: 0 0 20px var(--aura-cyan);">PF 2026</h1>
         <p class="mb-12 text-sm tracking-widest opacity-60 uppercase text-center">Digital Synchronicity Interface</p>
+        
         <div id="mode-selection" class="flex flex-col items-center">
             <button class="btn" onclick="initDisplayMode()">[ OPEN DISPLAY STAGE ]</button>
-            <div class="h-px w-48 bg-emerald-900 my-8"></div>
-            <input type="text" id="remote-id-input" placeholder="INSERT STAGE ID">
-            <button class="btn" onclick="initControllerMode()">[ SYNC AndroidOS/iOS ]</button>
+            <div class="h-px w-48 bg-cyan-900 my-8"></div>
+            <input type="text" id="remote-id-input" placeholder="INSERT 6-CHAR ID">
+            <button class="btn" onclick="initControllerMode()">[ SYNC MOBILE DEVICE ]</button>
+            
+            <div class="mt-12">
+                <a href="https://auraadmin.online" target="_blank" class="btn-oval">
+                    <span class="animate-pulse">🌐</span> AURAADMIN.ONLINE
+                </a>
+            </div>
         </div>
-    </div>
-
-    <div id="frame-container">
-        <button onclick="closeFrame()" class="close-btn">Back to Menu</button>
-        <iframe id="manifest-frame" src=""></iframe>
     </div>
 
     <canvas id="stage-canvas"></canvas>
@@ -105,91 +128,55 @@
         const videoElement = document.getElementById('input-video');
         
         let peer, conn, isController = false;
-        let particles = [];
-        let matrixStreams = [];
-        let handX = -1000, handY = -1000, isFist = false;
-        let gravityX = 0, gravityY = 0.15;
-        let gyroOffset = { x: 0, y: 0 };
-        let vibrationsEnabled = true;
-
-        const ASCII_2026 = ["2", "0", "2", "6", "∞", "Ͼ", "Ͽ", "∑", "†", "≈", "PF"];
-        const MATRIX_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
-
-        // Matrix Rain Třída
-        class MatrixStream {
-            constructor(x) {
-                this.x = x;
-                this.y = Math.random() * -1000;
-                this.speed = Math.random() * 2 + 2;
-                this.chars = [];
-                this.maxLength = Math.floor(Math.random() * 20) + 10;
-            }
-            update() {
-                this.y += this.speed;
-                if (this.y > canvas.height) {
-                    this.y = -100;
-                    this.x = Math.random() * canvas.width;
-                    this.speed = Math.random() * 2 + 2;
-                }
-            }
-            draw() {
-                ctx.font = "12px 'JetBrains Mono'";
-                for (let i = 0; i < this.maxLength; i++) {
-                    const charY = this.y - (i * 15);
-                    if (charY < 0 || charY > canvas.height) continue;
-
-                    // Náhodné zobrazení "2025" s glow efektem
-                    const isYear = Math.random() > 0.995;
-                    const char = isYear ? "2025" : MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
-                    
-                    const opacity = 1 - (i / this.maxLength);
-                    ctx.fillStyle = isYear ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 255, 204, ${opacity * 0.3})`;
-                    
-                    if (isYear) {
-                        ctx.shadowBlur = 15;
-                        ctx.shadowColor = "#00ffcc";
-                        ctx.font = "bold 14px 'JetBrains Mono'";
-                    } else {
-                        ctx.shadowBlur = 0;
-                        ctx.font = "12px 'JetBrains Mono'";
-                    }
-
-                    ctx.fillText(char, this.x, charY);
-                }
-                ctx.shadowBlur = 0; // Reset stínu
-            }
-        }
+        let drops = [];
+        let remoteX = -1000, remoteY = -1000, isFist = false;
+        let gravityX = 0, gravityY = 0;
+        const chars = "0123456789ABCDEF";
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-
-        function openManifest() {
-            const container = document.getElementById('frame-container');
-            const frame = document.getElementById('manifest-frame');
-            frame.src = "https://lisesanalyses-ux.github.io/MDA/AuraManifest";
+        
+        // Funkce pro otevření iFramu
+        function openDocFrame(url) {
+            const container = document.getElementById('doc-frame-container');
+            const iframe = document.getElementById('doc-iframe');
+            const backBtn = document.getElementById('back-to-menu-global');
+            
+            iframe.src = url;
             container.style.display = 'block';
+            backBtn.style.display = 'block';
             if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
         }
 
-        function closeFrame() {
-            document.getElementById('frame-container').style.display = 'none';
-            document.getElementById('manifest-frame').src = "";
+        // Návrat do menu ze všeho (Stage i iFramu)
+        function closeAllAndReturn() {
+            location.reload(); // Nejbezpečnější způsob pro reset PeerJS a stavů
         }
 
+        function generateId() { return Math.random().toString(36).substr(2, 6).toUpperCase(); }
+
         function initDisplayMode() {
-            peer = new Peer();
+            const shortId = generateId();
+            peer = new Peer(shortId);
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
-                    <div class="text-center p-10 border-2 border-dashed border-emerald-500 bg-black">
-                        <p class="text-7xl font-black text-white mb-6">${id}</p>
-                        <p class="animate-pulse text-emerald-400 text-xs tracking-widest">AWAITING SYNC...</p>
+                    <div class="text-center p-10 border border-cyan-500/30 bg-cyan-500/5 backdrop-blur-md">
+                        <p class="text-[10px] opacity-50 tracking-[5px] mb-4">ACCESS KEY</p>
+                        <p class="id-display mb-6">${id}</p>
+                        <p class="animate-pulse text-cyan-400 text-xs tracking-widest uppercase">Awaiting Remote Sync...</p>
                     </div>`;
             });
             peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
 
-        function initControllerMode() {
-            const remoteId = document.getElementById('remote-id-input').value;
+        async function initControllerMode() {
+            const remoteId = document.getElementById('remote-id-input').value.toUpperCase();
             if(!remoteId) return alert("ID Required");
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permissionState = await DeviceOrientationEvent.requestPermission();
+                    if (permissionState === 'granted') { window.addEventListener('deviceorientation', handleOrientation); }
+                } catch (e) { console.error(e); }
+            } else { window.addEventListener('deviceorientation', handleOrientation); }
             isController = true;
             peer = new Peer();
             peer.on('open', () => {
@@ -198,85 +185,73 @@
             });
         }
 
+        function handleOrientation(e) { gravityX = e.gamma / 45; gravityY = e.beta / 45; }
+
         function setupDataListener() {
             conn.on('data', (data) => {
-                handX = data.x * canvas.width;
-                handY = data.y * canvas.height;
-                isFist = data.fist;
-                gravityX = data.gx;
-                gravityY = data.gy;
+                remoteX = data.x * canvas.width; remoteY = data.y * canvas.height;
+                isFist = data.fist; gravityX = data.gx || 0; gravityY = data.gy || 0;
             });
         }
 
-        async function startEngine() {
-            document.getElementById('ui-layer').style.display = 'none';
-            canvas.style.display = 'block';
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            if (isController) {
-                // ... (Kód ovladače zůstává stejný)
-                const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-                hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
-                hands.onResults(res => {
-                    if(res.multiHandLandmarks?.[0]) {
-                        const lms = res.multiHandLandmarks[0];
-                        handX = (1 - lms[8].x); handY = lms[8].y;
-                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.3);
-                    } else { handX = -1000; }
-                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
-                });
-                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
-            } else {
-                // Inicializace Matrix deště (pozadí)
-                for(let i=0; i < canvas.width / 20; i++) matrixStreams.push(new MatrixStream(i * 20));
-                // Inicializace PF 2026 částic (popředí)
-                for(let i=0; i<250; i++) particles.push(new Particle());
-                render();
-            }
-        }
-
-        class Particle {
-            constructor() { this.reset(); this.size = Math.random() * 12 + 12; }
+        class Drop {
+            constructor() { this.reset(); }
             reset() {
-                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
-                this.bx = this.x; this.by = this.y; this.vx = 0; this.vy = 0;
-                this.char = ASCII_2026[Math.floor(Math.random() * ASCII_2026.length)];
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.baseX = this.x; this.baseY = this.y;
+                this.speed = Math.random() * 2 + 0.5;
+                this.char = chars[Math.floor(Math.random()*chars.length)];
             }
             update() {
-                let dx = handX - this.x, dy = handY - this.y;
-                let d = Math.hypot(dx, dy);
-                if (d < 300 && handX > -500) {
-                    let force = (300 - d) / 300;
-                    if (isFist) { this.vx += (dx/d) * force * 18; this.vy += (dy/d) * force * 18; this.char = "2026"; }
-                    else { this.vx -= (dx/d) * force * 14; this.vy -= (dy/d) * force * 14; }
+                let dx = remoteX - this.x; let dy = remoteY - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 200 && remoteX > -500) {
+                    if (isFist) { this.x += dx * 0.1; this.y += dy * 0.1; }
+                    else { this.x -= dx * 0.05; this.y -= dy * 0.05; }
                 }
-                this.vx += (this.bx - this.x) * 0.04; this.vy += (this.by - this.y) * 0.04;
-                this.vx *= 0.88; this.vy *= 0.88;
-                this.x += this.vx; this.y += this.vy;
-                this.bx += gravityX * 3; this.by += gravityY * 3;
-                if (this.by > canvas.height) this.by = 0; else if (this.by < 0) this.by = canvas.height;
-                if (this.bx > canvas.width) this.bx = 0; else if (this.bx < 0) this.bx = canvas.width;
+                this.x += gravityX * 10; this.y += gravityY * 10;
+                this.x += (this.baseX - this.x) * 0.02;
+                this.y += (this.baseY - this.y) * 0.02;
+                this.baseY += this.speed;
+                if (this.baseY > canvas.height) { this.baseY = -20; this.baseX = Math.random() * canvas.width; }
             }
             draw() {
-                ctx.font = `${isFist ? this.size*1.2 : this.size}px 'JetBrains Mono'`;
-                ctx.fillStyle = isFist ? "#ff00ff" : "#00ffcc";
-                ctx.shadowBlur = isFist ? 20 : 5;
-                ctx.shadowColor = ctx.fillStyle;
+                ctx.fillStyle = isFist ? "#ff00ff" : "rgba(0, 242, 255, 0.4)";
+                ctx.font = "14px 'Share Tech Mono'";
                 ctx.fillText(this.char, this.x, this.y);
             }
         }
 
+        async function startEngine() {
+            document.getElementById('ui-layer').style.display = 'none';
+            document.getElementById('back-to-menu-global').style.display = 'block';
+            canvas.style.display = 'block';
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (isController) {
+                const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
+                hands.onResults(res => {
+                    let sendX = -1000, sendY = -1000, sendFist = false;
+                    if(res.multiHandLandmarks?.[0]) {
+                        const lms = res.multiHandLandmarks[0];
+                        sendX = (1 - lms[8].x); sendY = lms[8].y;
+                        sendFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.25);
+                    }
+                    if(conn?.open) { conn.send({ x: sendX, y: sendY, fist: sendFist, gx: gravityX, gy: gravityY }); }
+                });
+                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
+            } else {
+                for(let i=0; i<250; i++) drops.push(new Drop());
+                render();
+            }
+        }
+
         function render() {
-            ctx.fillStyle = 'rgba(0, 5, 5, 0.25)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 1. Vykreslení Matrix pozadí
-            matrixStreams.forEach(s => { s.update(); s.draw(); });
-            
-            // 2. Vykreslení interaktivních PF 2026 částic
-            particles.forEach(p => { p.update(); p.draw(); });
-            
+            drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
         }
 
