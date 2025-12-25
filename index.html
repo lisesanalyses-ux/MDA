@@ -63,7 +63,6 @@
         #side-menu.open { left: 0; }
         .menu-trigger { position: fixed; left: 20px; top: 20px; z-index: 2100; cursor: pointer; border: 1.5px solid var(--aura-cyan); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); border-radius: 8px; }
 
-        /* --- STYLOVÁNÍ NOVÉHO TLAČÍTKA ZPĚT --- */
         #manifest-frame-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; }
         #manifest-frame-container.active { display: block; }
 
@@ -191,23 +190,41 @@
             }
         }, 90);
 
+        // OPRAVENÁ INITIALIZACE DLE AMM STANDARDU
         function runInitialization() {
             const btn = document.getElementById('init-btn');
-            const masterID = 'PF26-' + Math.random().toString(36).substr(2, 4).toUpperCase();
-            peer = new Peer(masterID);
+            // AMM očekává čisté ID z PeerJS serveru bez prefixu, aby se Controller mohl připojit
+            peer = new Peer(); 
             peer.on('open', (id) => {
                 btn.innerText = "[ STAGE READY ]";
                 document.getElementById('node-ready').classList.remove('hidden');
                 document.getElementById('id-output').innerText = id;
             });
+
+            // Přidání naslouchání na příchozí data (AMM posílá x, y, fist, gx, gy)
             peer.on('connection', (c) => {
                 conn = c;
                 btn.innerText = "[ REMOTE SYNCED ]";
+                setupDataListener();
+            });
+        }
+
+        function setupDataListener() {
+            if(!conn) return;
+            conn.on('data', (data) => {
+                // Zde může index.html reagovat na pohyby z AMM ovladače
+                console.log("AMM Data:", data);
+                // Propojení s vizuálem index.html (volitelné)
+                if(data.overload) {
+                   document.body.style.filter = "invert(1)";
+                } else {
+                   document.body.style.filter = "none";
+                }
             });
         }
 
         function connectToPeer() {
-            const targetID = document.getElementById('peer-id-input').value.trim().toUpperCase();
+            const targetID = document.getElementById('peer-id-input').value.trim();
             if(!targetID) return;
             peer = new Peer(); 
             peer.on('open', () => {
@@ -255,7 +272,6 @@
             canvas.height = window.innerHeight;
         });
 
-        // Přidání zavírání pomocí klávesy ESC
         window.addEventListener('keydown', (e) => {
             if (e.key === "Escape") closeAuraManifest();
         });
