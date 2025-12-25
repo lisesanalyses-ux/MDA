@@ -2,183 +2,199 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraSync Master v15.3</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PF 2026 | AuraManifest System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --aura-cyan: #00f2ff; --aura-magenta: #ff00ff; }
-        body { background: #000; margin: 0; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: var(--aura-cyan); }
-        canvas { position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
-        #ui-layer { position: relative; z-index: 10; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        #ui-layer * { pointer-events: auto; }
-
-        /* PRUH - Posunut o dalších 10% (celkem 22.5% od okraje) */
-        #ascii-decoder-stream {
-            position: fixed; left: 22.5%; top: 0; height: 100vh; width: 60px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            gap: 4px; font-size: 20px; color: rgba(0, 242, 255, 0.15); z-index: 5; pointer-events: none;
-        }
-
-        /* EXTRA GLOW MATCHING EFEKT */
-        .match-active { 
-            color: #fff !important; 
-            /* Vícevrstvé text-shadow pro extrémní záři */
-            text-shadow: 
-                0 0 10px #fff, 
-                0 0 20px var(--aura-cyan), 
-                0 0 40px var(--aura-cyan),
-                0 0 60px var(--aura-cyan); 
-            animation: bounce 0.4s infinite alternate; 
-            background: rgba(0, 242, 255, 0.45); 
-            padding: 2px 12px; 
-            font-weight: bold;
-            box-shadow: 0 0 25px rgba(0, 242, 255, 0.5);
-            border-radius: 2px;
-        }
-        @keyframes bounce { from { transform: translateY(0) scale(1.1); } to { transform: translateY(-15px) scale(1.2); } }
-
-        /* SIDEBAR A FRAME */
-        #side-menu {
-            position: fixed; left: -320px; top: 0; width: 300px; height: 100vh;
-            background: rgba(0, 5, 5, 0.98); border-right: 2px solid var(--aura-cyan);
-            z-index: 2000; transition: 0.5s; padding: 60px 20px;
-        }
-        #side-menu.open { left: 0; }
-        .menu-trigger { position: fixed; left: 20px; top: 20px; z-index: 2100; cursor: pointer; border: 1px solid var(--aura-cyan); padding: 10px; background: rgba(0,0,0,0.8); }
-        #manifest-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4000; display: none; flex-direction: column; }
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; }
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
+        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); }
+        .btn { border: 2px solid #00ffcc; padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); letter-spacing: 3px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px rgba(0, 255, 204, 0.6); transform: scale(1.05); }
         
-        /* UI ELEMENTY */
-        .btn-cyber { padding: 12px 40px; background: rgba(0,0,0,0.8); border: 1px solid var(--clr); color: var(--clr); cursor: pointer; transition: 0.3s; width: 320px; text-align: center; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
-        .btn-cyber:hover { background: var(--clr); color: #000; box-shadow: 0 0 25px var(--clr); }
-        .input-cyber { background: rgba(0,0,0,0.7); border: 1px solid rgba(0,242,255,0.3); color: #fff; padding: 10px; text-align: center; width: 320px; outline: none; margin: 10px 0; }
-        #id-display { font-size: 1.5rem; border: 1px solid rgba(0,242,255,0.5); padding: 12px; background: rgba(0,242,255,0.1); margin: 15px 0; letter-spacing: 5px; color: #fff; text-align: center; }
+        /* Styl pro menší kontaktní tlačítka pod syncem */
+        .btn-sm { border: 1px solid #00ffcc; padding: 8px 16px; font-size: 10px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #00ffcc; }
+        .btn-sm:hover { background: rgba(0, 255, 204, 0.2); box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); }
+        .btn-cyan { border-color: #00ffff; color: #00ffff; }
+        .btn-cyan:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
+
+        #peer-info { position: fixed; bottom: 20px; right: 20px; font-size: 10px; z-index: 100; color: rgba(0, 255, 204, 0.3); letter-spacing: 1px; }
+        #remote-id-input { background: rgba(0, 255, 204, 0.05); border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; outline: none; width: 250px; font-weight: bold; }
+        .glitch-2026 { animation: neon 1.5s ease-in-out infinite alternate; color: #fff; text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; }
+        @keyframes neon { from { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; } to { text-shadow: 0 0 5px #00ffcc, 0 0 10px #00ffcc, 0 0 30px #ff00ff; } }
     </style>
 </head>
 <body>
 
-    <div id="ascii-decoder-stream"></div>
+    <div id="peer-info">CORE ENGINE 2026 :: READY</div>
 
-    <div class="menu-trigger" onclick="toggleMenu()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-    </div>
+    <div id="ui-layer">
+        <h1 class="text-6xl mb-2 font-black glitch-2026 text-center italic">PF 2026</h1>
+        <p class="mb-12 text-sm tracking-widest opacity-60 uppercase">The year of digital synchronicity</p>
+        
+        <div id="mode-selection" class="flex flex-col items-center">
+            <button class="btn" onclick="initDisplayMode()">[ OPEN DISPLAY STAGE ]</button>
+            <div class="h-px w-48 bg-emerald-900 my-8"></div>
+            
+            <input type="text" id="remote-id-input" placeholder="INSERT STAGE ID">
+            <button class="btn" onclick="initControllerMode()">[ SYNC AndroidOS/iOS ]</button>
 
-    <nav id="side-menu">
-        <div class="p-4 border-b border-white/10 cursor-pointer hover:bg-cyan-900/20" onclick="openManifest()">01. Aura Manifest Frame</div>
-        <div class="p-4 border-b border-white/10 cursor-pointer hover:bg-cyan-900/20" onclick="location.reload()">02. Hard Reboot</div>
-    </nav>
-
-    <div id="manifest-container">
-        <div class="p-2 border-b border-cyan-900 bg-black flex justify-between items-center">
-            <button onclick="closeManifest()" class="text-[10px] border border-cyan-900 px-6 py-2 text-cyan-400">[ BACK_TO_CORE ]</button>
+            <div class="flex gap-4 mt-6">
+                <a href="https://auraadmin.online" target="_blank" class="btn-sm">
+                    🌐 AURAADMIN.ONLINE
+                </a>
+                <a href="mailto:lisesanalyses@gmaill.com" class="btn-sm btn-cyan">
+                    ✉ GMAIL.COM
+                </a>
+            </div>
         </div>
-        <iframe id="manifest-frame" class="w-full flex-grow border-none" src=""></iframe>
     </div>
 
     <canvas id="stage-canvas"></canvas>
-
-    <div id="ui-layer">
-        <h1 class="text-6xl font-bold tracking-[20px] mb-12" style="text-shadow: 0 0 15px var(--aura-cyan);">PF 2026</h1>
-        <div class="flex flex-col items-center">
-            <button onclick="startHost()" id="host-btn" class="btn-cyber" style="--clr: var(--aura-cyan)">[ Generate Node ID ]</button>
-            <div id="node-info" class="hidden"><div id="id-display">--- --- ---</div></div>
-            <div class="h-px w-40 bg-white/10 my-10"></div>
-            <input type="text" id="target-id" placeholder="NODE ID" class="input-cyber">
-            <button onclick="startClient()" id="client-btn" class="btn-cyber" style="--clr: var(--aura-magenta)">[ Sync Mobile ]</button>
-        </div>
-    </div>
+    <video id="input-video" playsinline style="display:none;"></video>
 
     <script>
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let drops = [], rx = -1000, ry = -1000;
+        const videoElement = document.getElementById('input-video');
+        const peerInfo = document.getElementById('peer-info');
+        
+        let peer, conn, isController = false;
+        let particles = [];
+        let handX = -1000, handY = -1000, isFist = false;
+        let gravityX = 0, gravityY = 0.15;
+        let systemOverload = false;
 
-        function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
-        function openManifest() {
-            document.getElementById('manifest-frame').src = 'https://lisesanalyses-ux.github.io/MDA/AuraManifest.html';
-            document.getElementById('manifest-container').style.display = 'flex';
-            toggleMenu();
+        const ASCII_2026 = ["2", "0", "2", "6", "∞", "Ͼ", "Ͽ", "∑", "†", "≈", "PF"];
+
+        function initDisplayMode() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                document.getElementById('mode-selection').innerHTML = `
+                    <div class="text-center p-10 border-2 border-dashed border-emerald-500 bg-black">
+                        <p class="text-xs uppercase mb-4 opacity-50">Stage Access Key:</p>
+                        <p class="text-7xl font-black text-white mb-6 tracking-tighter">${id}</p>
+                        <p class="animate-pulse text-emerald-400 text-xs">AWAITING CONTROLLER SIGNAL...</p>
+                    </div>`;
+                peerInfo.innerText = "ACCESS ID: " + id;
+            });
+            peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
-        function closeManifest() { document.getElementById('manifest-container').style.display = 'none'; document.getElementById('manifest-frame').src = ''; }
 
-        // LOGIKA PRUHU: MATCHING -> GLOW -> ROZPAD
-        let cycle = 0; 
-        let pStart = 10;
-
-        function initStream() {
-            const s = document.getElementById('ascii-decoder-stream');
-            for(let i=0; i<30; i++) { const span = document.createElement('span'); span.id = `c-${i}`; s.appendChild(span); }
+        function initControllerMode() {
+            const remoteId = document.getElementById('remote-id-input').value;
+            if(!remoteId) return alert("ID Required");
+            isController = true;
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(remoteId);
+                conn.on('open', () => { startEngine(); });
+            });
         }
 
-        function updateStream() {
-            cycle++;
-            if(cycle > 130) { cycle = 0; pStart = Math.floor(Math.random()*24); }
-            
-            const p = ["2", "0", "2", "6"];
-            for(let i=0; i<30; i++) {
-                const el = document.getElementById(`c-${i}`);
-                const isP = i >= pStart && i < pStart + 4;
+        function setupDataListener() {
+            conn.on('data', (data) => {
+                handX = data.x * canvas.width;
+                handY = data.y * canvas.height;
+                isFist = data.fist;
+                gravityX = data.gx;
+                gravityY = data.gy;
+                systemOverload = data.overload;
+            });
+        }
 
-                if (cycle > 80 && cycle <= 125 && isP) {
-                    el.innerText = p[i-pStart]; el.className = "match-active"; 
-                } else if (cycle > 60 && isP) {
-                    el.innerText = Math.random() > 0.5 ? p[i-pStart] : chars[Math.floor(Math.random()*chars.length)];
-                    el.className = "text-white opacity-100"; 
-                } else {
-                    el.innerText = chars[Math.floor(Math.random()*chars.length)];
-                    el.className = ""; 
-                }
+        async function startEngine() {
+            document.getElementById('ui-layer').style.display = 'none';
+            canvas.style.display = 'block';
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            if (isController) {
+                initSensors();
+                const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
+                hands.onResults(res => {
+                    if(res.multiHandLandmarks?.[0]) {
+                        const lms = res.multiHandLandmarks[0];
+                        handX = (1 - lms[8].x);
+                        handY = lms[8].y;
+                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.3);
+                    } else { handX = -1000; }
+                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY, overload: systemOverload });
+                });
+                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
+            } else {
+                for(let i=0; i<250; i++) particles.push(new Particle());
+                render();
             }
         }
 
-        function initCanvas() {
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            drops = Array.from({length: 90}, () => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2+1 }));
-        }
-
-        function draw() {
-            ctx.fillStyle = "rgba(0,0,0,0.15)"; ctx.fillRect(0,0,canvas.width, canvas.height);
-            ctx.font = "12px monospace";
-            drops.forEach(d => {
-                d.y += d.s;
-                let dx = rx - d.x; let dy = ry - d.y;
-                if(Math.sqrt(dx*dx + dy*dy) < 160) d.x -= dx * 0.06;
-                if(d.y > canvas.height) d.y = -20;
-                ctx.fillStyle = "rgba(0, 242, 255, 0.2)"; 
-                ctx.fillText(chars[Math.floor(Math.random()*chars.length)], d.x, d.y);
-            });
-            requestAnimationFrame(draw);
-        }
-
-        let peer, conn;
-        function startHost() {
-            peer = new Peer(Math.random().toString(36).substr(2, 6).toUpperCase());
-            peer.on('open', id => { 
-                document.getElementById('host-btn').style.display='none'; 
-                document.getElementById('node-info').classList.remove('hidden'); 
-                document.getElementById('id-display').innerText = id.match(/.{1,3}/g).join('-'); 
-            });
-            peer.on('connection', c => { conn = c; conn.on('data', data => { rx = data.x * canvas.width; ry = data.y * canvas.height; }); });
-        }
-
-        function startClient() {
-            const tid = document.getElementById('target-id').value.toUpperCase().replace(/-/g,'');
-            peer = new Peer();
-            peer.on('open', () => {
-                conn = peer.connect(tid);
-                conn.on('open', () => { 
-                    document.getElementById('client-btn').innerText = "[ SYNCED ]";
-                    window.addEventListener('touchmove', e => { 
-                        conn.send({ x: e.touches[0].clientX / window.innerWidth, y: e.touches[0].clientY / window.innerHeight }); 
-                    }, {passive: false});
-                });
+        function initSensors() {
+            window.addEventListener('deviceorientation', (e) => {
+                gravityX = (e.gamma / 45) * 0.25;
+                gravityY = (e.beta / 45) * 0.25;
             });
         }
 
-        window.onload = () => { initCanvas(); draw(); initStream(); setInterval(updateStream, 80); };
-        window.onresize = initCanvas;
+        class Particle {
+            constructor() {
+                this.reset();
+                this.size = Math.random() * 12 + 12;
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.bx = this.x; this.by = this.y;
+                this.vx = 0; this.vy = 0;
+                this.char = ASCII_2026[Math.floor(Math.random() * ASCII_2026.length)];
+            }
+            update() {
+                let dx = handX - this.x, dy = handY - this.y;
+                let d = Math.hypot(dx, dy);
+                
+                if (d < 300 && handX > -500) {
+                    let force = (300 - d) / 300;
+                    if (isFist) { 
+                        this.vx += (dx/d) * force * 18; 
+                        this.vy += (dy/d) * force * 18;
+                        this.char = "2026";
+                    } else { 
+                        this.vx -= (dx/d) * force * 14; 
+                        this.vy -= (dy/d) * force * 14;
+                    }
+                }
+
+                this.vx += (this.bx - this.x) * 0.04;
+                this.vy += (this.by - this.y) * 0.04;
+                this.vx *= 0.88; this.vy *= 0.88;
+                this.x += this.vx; this.y += this.vy;
+                
+                this.bx += gravityX * 3; this.by += gravityY * 3;
+                if (this.by > canvas.height) this.by = 0; else if (this.by < 0) this.by = canvas.height;
+                if (this.bx > canvas.width) this.bx = 0; else if (this.bx < 0) this.bx = canvas.width;
+
+                if(Math.random() > 0.98) this.char = ASCII_2026[Math.floor(Math.random() * ASCII_2026.length)];
+            }
+            draw() {
+                ctx.font = `${isFist ? this.size*1.2 : this.size}px 'JetBrains Mono'`;
+                ctx.fillStyle = isFist ? "#ff00ff" : (systemOverload ? "#fff" : "#00ffcc");
+                ctx.shadowBlur = isFist ? 20 : 5;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.fillText(this.char, this.x, this.y);
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(0, 5, 5, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(render);
+        }
+
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     </script>
 </body>
 </html>
