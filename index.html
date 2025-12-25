@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v14.1 MASTER</title>
+    <title>PF 2026 | AuraManifest Sync FIX</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -10,159 +10,131 @@
     <style>
         :root { --aura-cyan: #00f2ff; --aura-magenta: #ff00ff; }
         body { background: #000; margin: 0; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: var(--aura-cyan); }
-        
-        /* Vrstvy */
         canvas { position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
         #ui-layer { position: relative; z-index: 10; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         #ui-layer * { pointer-events: auto; }
-
-        .scanlines::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.02));
-            z-index: 1000; background-size: 100% 3px, 3px 100%; pointer-events: none;
-        }
-
-        #ascii-decoder-stream {
-            position: fixed; left: 25%; top: 0; height: 100vh; width: 50px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            gap: 4px; font-size: 18.4px; color: rgba(0, 242, 255, 0.15); z-index: 5; pointer-events: none;
-        }
-
-        .match-digit { 
-            color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--aura-cyan); 
-            animation: bounce 0.5s infinite alternate; background: rgba(0, 242, 255, 0.4); padding: 2px 8px;
-        }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
-
-        .btn-cyber {
-            padding: 12px 40px; background: rgba(0, 0, 0, 0.8); text-transform: uppercase; 
-            font-weight: 800; letter-spacing: 4px; cursor: pointer; border: 1px solid var(--clr); 
-            color: var(--clr); transition: 0.3s; width: 350px; text-align: center;
-        }
+        .btn-cyber { padding: 12px 40px; background: rgba(0,0,0,0.8); border: 1px solid var(--clr); color: var(--clr); cursor: pointer; transition: 0.3s; width: 320px; text-align: center; font-weight: bold; letter-spacing: 2px; }
         .btn-cyber:hover { background: var(--clr); color: #000; box-shadow: 0 0 20px var(--clr); }
-        .cyan-btn { --clr: var(--aura-cyan); }
-        .magenta-btn { --clr: var(--aura-magenta); }
-
-        .input-cyber {
-            background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(0, 242, 255, 0.3);
-            color: white; padding: 10px; text-align: center; width: 350px; outline: none;
-        }
-
-        #side-menu {
-            position: fixed; left: -350px; top: 0; width: 340px; height: 100vh;
-            background: rgba(0, 10, 10, 0.98); border-right: 3px solid var(--aura-cyan);
-            z-index: 2000; transition: 0.5s; padding: 80px 30px;
-        }
-        #side-menu.open { left: 0; }
-        .menu-trigger { position: fixed; left: 20px; top: 20px; z-index: 2100; cursor: pointer; border: 1.5px solid var(--aura-cyan); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
+        .input-cyber { background: rgba(0,0,0,0.7); border: 1px solid rgba(0,242,255,0.3); color: #fff; padding: 10px; text-align: center; width: 320px; outline: none; margin: 10px 0; }
+        #id-display { font-size: 1.5rem; border: 1px solid rgba(0,242,255,0.5); padding: 10px 20px; background: rgba(0,242,255,0.1); margin: 15px 0; letter-spacing: 5px; }
     </style>
 </head>
-<body class="scanlines">
+<body>
 
     <canvas id="stage-canvas"></canvas>
-    <div id="ascii-decoder-stream"></div>
 
     <div id="ui-layer">
-        <h1 class="text-7xl font-bold tracking-[20px] mb-8 text-center" style="text-shadow: 0 0 20px var(--aura-cyan);">PF 2026</h1>
+        <h1 class="text-5xl font-bold tracking-[15px] mb-10">PF 2026</h1>
         
-        <div id="sync-controls" class="flex flex-col items-center gap-6">
-            <button id="init-btn" class="btn-cyber cyan-btn" onclick="runInitialization()">[ Initialize Stage ]</button>
-            <div id="node-ready" class="hidden text-center mt-4">
-                <div id="id-output" class="text-3xl font-bold px-8 py-3 border border-cyan-500/40 tracking-[10px] bg-cyan-500/10 text-white">--- --- ---</div>
+        <div id="host-controls" class="flex flex-col items-center">
+            <button onclick="startHost()" id="host-btn" class="btn-cyber" style="--clr: var(--aura-cyan)">[ GENERATE NODE ID ]</button>
+            <div id="node-info" class="hidden flex flex-col items-center">
+                <div id="id-display">--- --- ---</div>
+                <p class="text-[10px] opacity-50">SHARE THIS ID TO MOBILE DEVICE</p>
             </div>
-            <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="input-cyber mt-4">
-            <button id="connect-btn" class="btn-cyber magenta-btn" onclick="connectToPeer()">[ Sync Mobile ]</button>
+        </div>
+
+        <div class="h-px w-40 bg-white/10 my-8"></div>
+
+        <div id="client-controls" class="flex flex-col items-center">
+            <input type="text" id="target-id" placeholder="ENTER ID" class="input-cyber">
+            <button onclick="startClient()" id="client-btn" class="btn-cyber" style="--clr: var(--aura-magenta)">[ SYNC MOBILE ]</button>
         </div>
     </div>
 
     <script>
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*";
         let drops = [];
-        let rx = -1000, ry = -1000, isFist = false;
+        let peer = null;
+        let conn = null;
+        let rx = -1000, ry = -1000;
 
-        class Drop {
-            constructor() { this.reset(); }
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * -canvas.height;
-                this.originX = this.x;
-                this.speed = Math.random() * 2 + 1;
-                this.char = chars[Math.floor(Math.random()*chars.length)];
-            }
-            update() {
-                this.y += this.speed;
-                let dx = rx - this.x; let dy = ry - this.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 250) {
-                    if (isFist) { this.x += dx * 0.15; this.y += dy * 0.15; }
-                    else { this.x -= dx * 0.1; }
-                } else { this.x += (this.originX - this.x) * 0.05; }
-                if (this.y > canvas.height) this.reset();
-            }
-            draw() {
-                ctx.fillStyle = isFist ? "rgba(255, 0, 255, 0.5)" : "rgba(0, 242, 255, 0.2)";
-                ctx.font = "12px Share Tech Mono";
-                ctx.fillText(this.char, this.x, this.y);
-            }
-        }
-
-        function initAura() {
+        // --- ANIMACE (VŽDY BĚŽÍ) ---
+        function initCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            drops = [];
-            for(let i=0; i<120; i++) drops.push(new Drop());
+            drops = Array.from({length: 100}, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                s: Math.random() * 2 + 1,
+                char: "0123456789ABCDEF"[Math.floor(Math.random()*16)]
+            }));
         }
 
-        function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            drops.forEach(d => { d.update(); d.draw(); });
-            requestAnimationFrame(render);
-        }
-
-        // PeerJS Logika
-        let peer;
-        function runInitialization() {
-            const masterID = Math.random().toString(36).substr(2, 9).toUpperCase();
-            peer = new Peer(masterID);
-            peer.on('open', (id) => {
-                document.getElementById('init-btn').innerText = "[ STAGE READY ]";
-                document.getElementById('node-ready').classList.remove('hidden');
-                document.getElementById('id-output').innerText = id.match(/.{1,3}/g).join('-');
+        function draw() {
+            ctx.fillStyle = "rgba(0,0,0,0.15)";
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            ctx.font = "12px monospace";
+            
+            drops.forEach(d => {
+                d.y += d.s;
+                // Interakce se synchronizovanými souřadnicemi
+                let dx = rx - d.x;
+                let dy = ry - d.y;
+                if(Math.sqrt(dx*dx + dy*dy) < 150) {
+                    d.x -= dx * 0.05;
+                }
+                if(d.y > canvas.height) d.y = -20;
+                ctx.fillStyle = "rgba(0, 242, 255, 0.3)";
+                ctx.fillText(d.char, d.x, d.y);
             });
-            peer.on('connection', (conn) => {
-                conn.on('data', (data) => {
-                    rx = data.x * canvas.width; ry = data.y * canvas.height; isFist = data.fist;
+            requestAnimationFrame(draw);
+        }
+
+        // --- SYNCHRONIZACE LOGIKA ---
+
+        // 1. HOST (PC)
+        function startHost() {
+            const shortId = Math.random().toString(36).substr(2, 6).toUpperCase();
+            peer = new Peer(shortId);
+            
+            peer.on('open', id => {
+                document.getElementById('host-btn').classList.add('hidden');
+                document.getElementById('node-info').classList.remove('hidden');
+                document.getElementById('id-display').innerText = id.match(/.{1,3}/g).join('-');
+                console.log("Uzel připraven: " + id);
+            });
+
+            peer.on('connection', c => {
+                conn = c;
+                console.log("Mobil připojen!");
+                conn.on('data', data => {
+                    // Přijímáme data z mobilu
+                    rx = data.x * canvas.width;
+                    ry = data.y * canvas.height;
+                });
+            });
+
+            peer.on('error', err => console.error("Peer Error:", err));
+        }
+
+        // 2. KLIENT (Mobil)
+        function startClient() {
+            const targetId = document.getElementById('target-id').value.replace(/-/g, '').trim().toUpperCase();
+            if(!targetId) return alert("Zadej ID!");
+
+            peer = new Peer(); // Mobil dostane náhodné ID
+            peer.on('open', () => {
+                conn = peer.connect(targetId);
+                conn.on('open', () => {
+                    document.getElementById('client-btn').innerText = "[ CONNECTED ]";
+                    document.body.style.background = "#050005";
+                    
+                    // Posílání dotyku z mobilu na PC
+                    window.addEventListener('touchmove', e => {
+                        const touch = e.touches[0];
+                        conn.send({
+                            x: touch.clientX / window.innerWidth,
+                            y: touch.clientY / window.innerHeight
+                        });
+                    });
                 });
             });
         }
 
-        window.onload = () => {
-            initAura();
-            render();
-            // Start ASCII stream
-            const stream = document.getElementById('ascii-decoder-stream');
-            for(let i=0; i<25; i++) {
-                const s = document.createElement('span'); s.id = `sc-${i}`;
-                stream.appendChild(s);
-            }
-            setInterval(() => {
-                const match = { "10": "2", "11": "0", "12": "2", "13": "6" };
-                for(let i=0; i<25; i++) {
-                    const el = document.getElementById(`sc-${i}`);
-                    if (match[i] && Math.random() > 0.6) {
-                        el.innerText = match[i]; el.className = "match-digit";
-                    } else {
-                        el.innerText = chars[Math.floor(Math.random() * chars.length)];
-                        el.className = "";
-                    }
-                }
-            }, 100);
-        };
-
-        window.onresize = initAura;
+        window.onload = () => { initCanvas(); draw(); };
+        window.onresize = initCanvas;
     </script>
 </body>
 </html>
