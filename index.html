@@ -17,125 +17,134 @@
             z-index: 1000; background-size: 100% 3px, 3px 100%; pointer-events: none;
         }
 
-        /* ASCII PRUH */
         #ascii-decoder-stream {
-            position: fixed; left: 15%; top: 0; height: 100vh; width: 40px;
+            position: fixed; left: 25%; top: 0; height: 100vh; width: 50px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            gap: 2px; font-size: 16px; color: rgba(0, 242, 255, 0.3); z-index: 100;
-            pointer-events: none; text-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
+            gap: 4px; font-size: 18.4px; color: rgba(0, 242, 255, 0.15); z-index: 10;
+            pointer-events: none;
         }
-        .match-digit { color: #fff; font-weight: bold; font-size: 24px; text-shadow: 0 0 15px var(--aura-cyan); background: rgba(0, 242, 255, 0.2); padding: 2px 6px; transition: all 0.3s; }
-        .dissolve-effect { animation: dissolve 0.5s ease-out forwards; }
-        @keyframes dissolve { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; filter: blur(8px); } }
-
-        /* HUD BACK BUTTON */
-        .back-btn {
-            position: absolute; top: 25px; left: 25px; z-index: 5001;
-            width: 320px; height: 26px; background: rgba(0, 0, 0, 0.7);
-            border-left: 4px solid var(--aura-cyan); border-right: 1px solid rgba(0, 242, 255, 0.2);
-            color: var(--aura-cyan); cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1); backdrop-filter: blur(8px);
-            clip-path: polygon(0 0, 96% 0, 100% 50%, 96% 100%, 0 100%);
+        .match-digit { 
+            color: #fff; text-shadow: 0 0 15px var(--aura-cyan); 
+            animation: bounce 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) infinite alternate;
+            background: rgba(0, 242, 255, 0.3); padding: 2px 8px;
         }
-        .back-btn:hover { width: 380px; background: rgba(0, 242, 255, 0.1); border-left-width: 10px; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
-        /* TLAČÍTKA */
         .btn-cyber {
-            position: relative; padding: 18px 40px; background: rgba(0, 0, 0, 0.8);
-            text-transform: uppercase; font-weight: 800; letter-spacing: 3px; cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); border: 2px solid var(--clr);
-            color: var(--clr); box-shadow: inset 0 0 15px var(--clr); width: 360px; overflow: hidden;
+            position: relative; padding: 12px 40px; background: rgba(0, 0, 0, 0.8);
+            text-transform: uppercase; font-weight: 800; letter-spacing: 4px; cursor: pointer;
+            border: 1px solid var(--clr); color: var(--clr); transition: 0.3s;
+            width: 350px; text-align: center;
         }
-        .btn-cyber:hover:not(:disabled) { background: var(--clr); color: #000; box-shadow: 0 0 40px var(--clr); transform: translateY(-2px); }
-        .btn-cyber:disabled { opacity: 0.3; cursor: wait; }
-        .cyan-btn { --clr: var(--aura-cyan); }
-        .magenta-btn { --clr: var(--aura-magenta); }
+        .btn-cyber:hover { background: var(--clr); color: #000; box-shadow: 0 0 20px var(--clr); }
+        .cyan-btn { --clr: var(--aura-cyan); box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.4); }
+        .magenta-btn { --clr: var(--aura-magenta); box-shadow: inset 0 0 15px rgba(255, 0, 255, 0.4); }
 
-        /* PROMO BUBLINY */
-        .promo-bubble { 
-            position: fixed; bottom: 30px; border: 1px solid var(--aura-cyan); 
-            padding: 8px 18px; border-radius: 4px; font-size: 11px; 
-            background: rgba(0,0,0,0.9); text-decoration: none; color: var(--aura-cyan); 
-            z-index: 1500; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;
+        .input-cyber {
+            background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(0, 242, 255, 0.3);
+            color: white; padding: 10px; text-align: center; width: 350px; font-size: 14px;
+            letter-spacing: 4px; outline: none; margin-bottom: 5px;
         }
-        .promo-bubble:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 20px var(--aura-cyan); transform: translateY(-5px); }
-        #link-web { left: 40%; transform: translateX(-50%); } 
-        #link-mail { right: 40%; transform: translateX(50%); }
 
-        /* SIDEBAR */
+        .footer-links { position: fixed; bottom: 20px; display: flex; gap: 20px; z-index: 100; }
+        .contact-link {
+            border: 1px solid var(--aura-cyan); padding: 6px 15px; font-size: 10px;
+            letter-spacing: 2px; text-decoration: none; color: var(--aura-cyan);
+            display: flex; align-items: center; gap: 8px; transition: 0.3s;
+            background: rgba(0,0,0,0.6);
+        }
+        .contact-link:hover { background: var(--aura-cyan); color: #000; }
+
         #side-menu {
             position: fixed; left: -350px; top: 0; width: 340px; height: 100vh;
             background: rgba(0, 10, 10, 0.98); border-right: 3px solid var(--aura-cyan);
-            z-index: 2000; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1); padding: 100px 30px;
+            z-index: 2000; transition: 0.5s; padding: 80px 30px;
         }
         #side-menu.open { left: 0; }
-        .menu-item {
-            display: block; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(0, 242, 255, 0.1);
-            color: var(--aura-cyan); text-decoration: none; font-size: 14px; text-transform: uppercase;
-            cursor: pointer; transition: 0.3s; letter-spacing: 2px;
-        }
-        .menu-item:hover { background: var(--aura-cyan); color: #000; padding-left: 25px; }
+        .menu-trigger { position: fixed; left: 20px; top: 20px; z-index: 2100; cursor: pointer; border: 1.5px solid var(--aura-cyan); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); border-radius: 8px; }
 
-        .menu-trigger { position: fixed; left: 30px; top: 30px; z-index: 2100; cursor: pointer; font-size: 32px; color: var(--aura-cyan); background: rgba(0, 20, 20, 0.8); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--aura-cyan); border-radius: 15px; }
+        /* --- STYLOVÁNÍ NOVÉHO TLAČÍTKA ZPĚT --- */
         #manifest-frame-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; }
         #manifest-frame-container.active { display: block; }
+
+        .sys-back-btn {
+            display: flex; align-items: center; gap: 15px; background: transparent;
+            color: var(--aura-cyan); cursor: pointer; padding: 5px 20px;
+            transition: 0.3s; border: none; font-family: 'Share Tech Mono', monospace;
+        }
+        .sys-back-btn:hover { opacity: 0.7; }
+        .sys-back-indicator { width: 4px; height: 24px; background: var(--aura-cyan); }
+        .sys-back-text { letter-spacing: 3px; font-size: 14px; }
+        .sys-back-esc { opacity: 0.6; margin-left: 10px; }
+
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         #ui-layer * { pointer-events: auto; }
         canvas { position: absolute; top: 0; left: 0; z-index: 5; }
-
-        /* SYNC PANEL */
-        .input-cyber {
-            background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.3);
-            color: white; padding: 15px; text-align: center; width: 360px; font-size: 18px;
-            letter-spacing: 5px; outline: none; transition: 0.3s;
-        }
-        .input-cyber:focus { border-color: var(--aura-cyan); background: rgba(0, 242, 255, 0.15); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
     </style>
 </head>
 <body class="scanlines">
 
-    <div class="menu-trigger" onclick="toggleMenu()">☰</div>
-    
+    <div class="menu-trigger" onclick="toggleMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </div>
+
     <nav id="side-menu">
-        <h3 id="os-tag" class="text-[10px] opacity-40 mb-10 tracking-[8px] text-center uppercase">Detecting OS...</h3>
-        <div class="menu-item" onclick="openAuraManifest()">01. AuraManifest</div>
-        <div class="menu-item" onclick="location.reload()">02. Reboot System</div>
-        <div class="menu-item" onclick="toggleMenu()">03. Terminate</div>
+        <h3 class="text-[10px] opacity-40 mb-10 tracking-[8px] text-center uppercase">System Alpha</h3>
+        <div class="menu-item border border-cyan-500/30 p-4 mb-4 cursor-pointer hover:bg-cyan-500 hover:text-black transition" onclick="openAuraManifest()">01. OPEN AURA MANIFEST</div>
+        <div class="menu-item border border-cyan-500/30 p-4 mb-4 cursor-pointer" onclick="location.reload()">02. SYSTEM REBOOT</div>
     </nav>
 
     <div id="manifest-frame-container">
-        <button class="back-btn" onclick="closeAuraManifest()">
-            <div class="flex items-center gap-3"><div class="w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div><span>SYS.BACK_TO_CORE</span></div>
-            <span class="opacity-40 font-bold">[ ESC ]</span>
-        </button>
-        <iframe id="manifest-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+        <div class="p-4 bg-black border-b border-cyan-900/30 flex justify-between items-center">
+            <button onclick="closeAuraManifest()" class="sys-back-btn">
+                <div class="sys-back-indicator"></div>
+                <div class="sys-back-text">
+                    SYS.BACK_TO_CORE <span class="sys-back-esc">[ ESC ]</span>
+                </div>
+            </button>
+            <span class="text-[10px] tracking-[4px] opacity-40">AURA MANIFEST V14.1</span>
+        </div>
+        <iframe id="manifest-iframe" src="" style="width:100%; height:calc(100% - 65px); border:none;"></iframe>
     </div>
 
     <div id="ascii-decoder-stream"></div>
 
     <div id="ui-layer">
-        <h1 class="text-6xl font-black tracking-[15px] mb-4 text-center">PF 2026</h1>
-        <div id="status-display" class="mb-12 text-center uppercase tracking-[4px] text-[12px] opacity-70">Aura Intelligence Integrated</div>
+        <h1 class="text-7xl font-bold tracking-[20px] mb-8 text-center" style="text-shadow: 0 0 20px var(--aura-cyan);">PF 2026</h1>
         
+        <p class="max-w-xl text-center text-[11px] leading-relaxed tracking-[3px] mb-12 opacity-90 uppercase">
+            Everyone should ask: In what society do we want to live? Reality is formed by our daily deeds.
+        </p>
+
         <div id="sync-controls" class="flex flex-col items-center gap-6">
-            <button id="init-btn" class="btn-cyber cyan-btn" onclick="runInitialization()">[ Initialize Stage ]</button>
-            
-            <div id="remote-box" class="flex flex-col items-center gap-4">
-                <input type="text" id="peer-id-input" placeholder="PASTE NODE ID" class="input-cyber">
-                <button class="btn-cyber magenta-btn" onclick="connectToPeer()">[ Connect Device ]</button>
+            <div id="host-zone" class="flex flex-col items-center gap-2">
+                <span class="text-[9px] opacity-40 tracking-[3px] mb-2">MASTER DISPLAY</span>
+                <button id="init-btn" class="btn-cyber cyan-btn" onclick="runInitialization()">[ Initialize Stage ]</button>
+                <div id="node-ready" class="hidden text-center">
+                    <div id="id-output" class="text-xl font-bold px-6 py-2 border border-cyan-500/40 tracking-[8px] bg-cyan-500/10">----</div>
+                </div>
             </div>
 
-            <div id="node-ready" class="hidden flex flex-col items-center gap-4">
-                <span class="text-[10px] opacity-50 uppercase tracking-[4px]">Access Node ID</span>
-                <div id="id-output" class="text-2xl font-bold bg-cyan-500/10 px-8 py-4 border border-cyan-500/40 tracking-[10px]">----</div>
-                <div class="text-[10px] text-magenta-500 animate-pulse mt-2">WAITING FOR REMOTE CONNECTION...</div>
+            <div class="w-[100px] h-[1px] bg-cyan-500/20 my-2"></div>
+
+            <div id="remote-zone" class="flex flex-col items-center gap-4">
+                <span class="text-[9px] opacity-40 tracking-[3px] mb-1">REMOTE CONTROLLER</span>
+                <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="input-cyber">
+                <button id="connect-btn" class="btn-cyber magenta-btn" onclick="connectToPeer()">[ Sync Mobile ]</button>
             </div>
         </div>
-    </div>
 
-    <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble"><span>🌐</span> auraadmin.online</a>
-    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble"><span>✉</span> lisesanalyses@gmail.com</a>
+        <div class="footer-links">
+            <a href="https://auraadmin.online" target="_blank" class="contact-link">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                AURAADMIN.ONLINE
+            </a>
+            <a href="mailto:lisesanalyses@gmail.com" class="contact-link">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                LISESANALYSES@GMAIL.COM
+            </a>
+        </div>
+    </div>
 
     <canvas id="stage-canvas"></canvas>
 
@@ -143,96 +152,78 @@
         let peer, conn, drops = [];
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
-
-        // OS DETECTION
-        function detectOS() {
-            const ua = navigator.userAgent;
-            const tag = document.getElementById('os-tag');
-            if (/iPhone|iPad|iPod/i.test(ua)) tag.innerText = "iOS SYSTEM ACCESS";
-            else if (/Android/i.test(ua)) tag.innerText = "ANDROID OS ACCESS";
-            else tag.innerText = "DESKTOP MASTER CORE";
-        }
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*";
 
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
-
-        // INITIALIZATION (HOST)
-        async function runInitialization() {
-            const btn = document.getElementById('init-btn');
-            const remoteBox = document.getElementById('remote-box');
-            const status = document.getElementById('status-display');
-            btn.disabled = true;
-
-            const steps = ["Booting Core...", "Generating Node Key...", "Encrypting Stream...", "Uplink Ready."];
-            for(let s of steps) {
-                status.innerText = s;
-                await new Promise(r => setTimeout(r, 600));
-            }
-
-            const masterID = 'PF26-' + Math.random().toString(36).substr(2, 4).toUpperCase();
-            peer = new Peer(masterID);
-            
-            peer.on('open', (id) => {
-                btn.classList.add('hidden');
-                remoteBox.classList.add('hidden');
-                document.getElementById('node-ready').classList.remove('hidden');
-                document.getElementById('id-output').innerText = id;
-                status.innerText = "System Synchronized";
-            });
-
-            peer.on('connection', (c) => {
-                conn = c;
-                status.innerText = "REMOTE LINK ESTABLISHED";
-                // TRIGGER GLITCH ON CONNECT
-                document.body.style.filter = "invert(1)";
-                setTimeout(() => document.body.style.filter = "none", 100);
-            });
+        
+        function openAuraManifest() {
+            document.getElementById('manifest-iframe').src = 'https://lisesanalyses-ux.github.io/MDA/AuraManifest.html';
+            document.getElementById('manifest-frame-container').classList.add('active');
+            toggleMenu();
+        }
+        function closeAuraManifest() {
+            document.getElementById('manifest-frame-container').classList.remove('active');
+            document.getElementById('manifest-iframe').src = '';
         }
 
-        // CONNECT (REMOTE)
-        function connectToPeer() {
-            const targetID = document.getElementById('peer-id-input').value.trim();
-            if(!targetID) return alert("ENTER VALID ID");
-
-            peer = new Peer();
-            peer.on('open', () => {
-                conn = peer.connect(targetID);
-                conn.on('open', () => {
-                    document.getElementById('status-display').innerText = "LINKED TO CORE";
-                    alert("SYNC SUCCESSFUL - CONTROLLING SYSTEM");
-                });
-            });
-        }
-
-        // ASCII & CANVAS (Vynechaný kód doplněn)
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*§";
-        const asciiContainer = document.getElementById('ascii-decoder-stream');
-        for(let i=0; i<35; i++) {
+        // --- MATCHING STREAM ---
+        const streamContainer = document.getElementById('ascii-decoder-stream');
+        for(let i=0; i<25; i++) {
             const span = document.createElement('span');
-            span.id = `ascii-${i}`;
-            asciiContainer.appendChild(span);
+            span.id = `stream-char-${i}`;
+            streamContainer.appendChild(span);
         }
 
         setInterval(() => {
-            const cyclePos = (Date.now() / 80) % 60;
-            const matchSequence = { "15": "2", "16": "0", "17": "2", "18": "6" };
-            for(let i=0; i<35; i++) {
-                const el = document.getElementById(`ascii-${i}`);
-                if (matchSequence[i] && cyclePos > 30 && cyclePos <= 50) {
+            const time = Date.now() / 1000;
+            const isMatchPhase = Math.sin(time * 1.5) > 0.6; 
+            const matchSequence = { "8": "2", "9": "0", "10": "2", "11": "6" };
+
+            for(let i=0; i<25; i++) {
+                const el = document.getElementById(`stream-char-${i}`);
+                if (isMatchPhase && matchSequence[i]) {
                     el.innerText = matchSequence[i];
-                    el.className = cyclePos > 45 ? "match-digit dissolve-effect" : "match-digit";
+                    el.className = "match-digit";
                 } else {
-                    el.innerText = chars[Math.floor(Math.random()*chars.length)];
+                    el.innerText = chars[Math.floor(Math.random() * chars.length)];
                     el.className = "";
                 }
             }
-        }, 80);
+        }, 90);
+
+        function runInitialization() {
+            const btn = document.getElementById('init-btn');
+            const masterID = 'PF26-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+            peer = new Peer(masterID);
+            peer.on('open', (id) => {
+                btn.innerText = "[ STAGE READY ]";
+                document.getElementById('node-ready').classList.remove('hidden');
+                document.getElementById('id-output').innerText = id;
+            });
+            peer.on('connection', (c) => {
+                conn = c;
+                btn.innerText = "[ REMOTE SYNCED ]";
+            });
+        }
+
+        function connectToPeer() {
+            const targetID = document.getElementById('peer-id-input').value.trim().toUpperCase();
+            if(!targetID) return;
+            peer = new Peer(); 
+            peer.on('open', () => {
+                conn = peer.connect(targetID);
+                conn.on('open', () => {
+                    document.getElementById('connect-btn').innerText = "[ LINK ESTABLISHED ]";
+                });
+            });
+        }
 
         class Drop {
             constructor() { this.reset(); }
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * -canvas.height;
-                this.speed = Math.random() * 5 + 2;
+                this.speed = Math.random() * 2 + 1;
                 this.char = chars[Math.floor(Math.random()*chars.length)];
             }
             update() {
@@ -241,7 +232,7 @@
             }
             draw() {
                 ctx.fillStyle = "rgba(0, 242, 255, 0.15)";
-                ctx.font = "15px Share Tech Mono";
+                ctx.font = "12px Share Tech Mono";
                 ctx.fillText(this.char, this.x, this.y);
             }
         }
@@ -253,28 +244,21 @@
             requestAnimationFrame(render);
         }
 
-        function openAuraManifest() {
-            document.getElementById('manifest-iframe').src = 'https://lisesanalyses-ux.github.io/MDA/AuraManifest.html';
-            document.getElementById('manifest-frame-container').classList.add('active');
-            toggleMenu();
-        }
-        function closeAuraManifest() {
-            document.getElementById('manifest-frame-container').classList.remove('active');
-            document.getElementById('manifest-iframe').src = '';
-        }
-
         window.onload = () => {
-            detectOS();
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            for(let i=0; i<100; i++) drops.push(new Drop());
+            for(let i=0; i<60; i++) drops.push(new Drop());
             render();
         };
-
-        window.onresize = () => {
+        window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-        };
+        });
+
+        // Přidání zavírání pomocí klávesy ESC
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") closeAuraManifest();
+        });
     </script>
 </body>
 </html>
