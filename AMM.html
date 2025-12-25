@@ -2,37 +2,36 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest MASTER</title>
+    <title>PF 2026 | AuraManifest Sync v14.1 MASTER</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root { --aura-cyan: #00f2ff; --aura-magenta: #ff00ff; }
-        body { background: #000; margin: 0; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: var(--aura-cyan); }
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: var(--aura-cyan); touch-action: none; }
         .scanlines::before {
             content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
             z-index: 1000; background-size: 100% 3px; pointer-events: none;
         }
-        .btn-cyber {
-            border: 1px solid var(--aura-cyan); padding: 12px 40px; background: rgba(0, 0, 0, 0.8);
-            text-transform: uppercase; letter-spacing: 4px; cursor: pointer; transition: 0.3s; color: var(--aura-cyan);
-        }
-        .btn-cyber:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 20px var(--aura-cyan); }
+        .btn-cyber { padding: 12px 40px; background: rgba(0, 0, 0, 0.8); text-transform: uppercase; font-weight: 800; letter-spacing: 4px; cursor: pointer; border: 1px solid var(--clr); color: var(--clr); transition: 0.3s; width: 350px; }
+        .btn-cyber:hover { background: var(--clr); color: #000; box-shadow: 0 0 20px var(--clr); }
+        .cyan-btn { --clr: var(--aura-cyan); }
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         canvas { position: absolute; top: 0; left: 0; z-index: 5; }
+        #id-output { color: #fff; text-shadow: 0 0 10px var(--aura-cyan); }
     </style>
 </head>
 <body class="scanlines">
 
     <div id="ui-layer">
         <h1 class="text-7xl font-bold tracking-[20px] mb-8" style="text-shadow: 0 0 20px var(--aura-cyan);">PF 2026</h1>
-        
         <div id="sync-controls" class="flex flex-col items-center gap-6">
-            <button id="init-btn" class="btn-cyber" onclick="runInitialization()">[ Initialize Stage ]</button>
+            <span class="text-[9px] opacity-40 tracking-[3px]">MASTER DISPLAY</span>
+            <button id="init-btn" class="btn-cyber cyan-btn" onclick="runInitialization()">[ Initialize Stage ]</button>
             <div id="node-ready" class="hidden text-center">
-                <span class="text-[9px] opacity-40 tracking-[3px]">ACCESS CODE</span>
-                <div id="id-output" class="text-4xl font-bold px-8 py-4 border border-cyan-500/40 tracking-[10px] bg-cyan-500/10 mt-2">----</div>
+                <div id="id-output" class="text-3xl font-bold px-8 py-4 border border-cyan-500/40 tracking-[6px] bg-cyan-500/10">----</div>
             </div>
         </div>
     </div>
@@ -46,39 +45,40 @@
         const ctx = canvas.getContext('2d');
         const chars = "0123456789ABCDEF";
 
-        // Generátor krátkého ID (např. 4 znaky)
+        // Generátor klíče: přesně 9 znaků
         function generateShortId() {
-            return Math.random().toString(36).substr(2, 4).toUpperCase();
+            const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            let res = "";
+            for(let i=0; i<9; i++) res += charset.charAt(Math.floor(Math.random() * charset.length));
+            return res;
         }
 
         function runInitialization() {
             const shortId = generateShortId();
             const btn = document.getElementById('init-btn');
             
-            // Inicializace s vlastním krátkým ID
-            peer = new Peer(shortId); 
+            peer = new Peer(shortId); // Spuštění s vlastním ID
             
             peer.on('open', (id) => {
                 btn.classList.add('hidden');
                 document.getElementById('node-ready').classList.remove('hidden');
-                document.getElementById('id-output').innerText = id;
+                // Formátování pro čitelnost: XXX-XXX-XXX
+                document.getElementById('id-output').innerText = id.match(/.{1,3}/g).join('-');
             });
 
             peer.on('connection', (c) => {
                 conn = c;
-                document.getElementById('id-output').style.color = "#ff00ff";
-                document.getElementById('id-output').innerText = "CONNECTED";
+                document.getElementById('ui-layer').style.opacity = "0.2"; // Ztlumení UI po připojení
                 setupDataListener();
             });
         }
 
         function setupDataListener() {
             conn.on('data', (data) => {
-                // Přepočet souřadnic z mobilu (0-1) na pixely plátna
+                // Převod relativních souřadnic z mobilu na pixely Masteru
                 remoteX = data.x * canvas.width;
                 remoteY = data.y * canvas.height;
                 isFist = data.fist;
-                
                 if(data.overload) document.body.style.filter = "invert(1)";
                 else document.body.style.filter = "none";
             });
@@ -89,36 +89,36 @@
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.baseX = this.x;
-                this.baseY = this.y;
-                this.speed = Math.random() * 2 + 0.5;
+                this.originX = this.x;
+                this.originY = this.y;
+                this.speed = Math.random() * 2 + 1;
                 this.char = chars[Math.floor(Math.random()*chars.length)];
             }
             update() {
-                // Reakce na pozici z mobilu
+                // Interakce s rukou (remoteX, remoteY)
                 let dx = remoteX - this.x;
                 let dy = remoteY - this.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
 
-                if (dist < 200) {
-                    let force = (200 - dist) / 200;
-                    if (isFist) { // Přitahování
-                        this.x += dx * 0.1;
-                        this.y += dy * 0.1;
+                if (dist < 250) {
+                    let force = (250 - dist) / 250;
+                    if (isFist) { // Přitahování při sevřené pěsti
+                        this.x += dx * 0.15;
+                        this.y += dy * 0.15;
                     } else { // Odpuzování
-                        this.x -= dx * 0.05;
-                        this.y -= dy * 0.05;
+                        this.x -= dx * 0.1;
+                        this.y -= dy * 0.1;
                     }
                 }
 
-                // Návrat do původní pozice (plavání)
-                this.x += (this.baseX - this.x) * 0.02;
-                this.y += (this.baseY - this.y) * 0.02;
-                this.baseY += this.speed;
-                if (this.baseY > canvas.height) this.baseY = -20;
+                // Návrat a plynulý pohyb
+                this.x += (this.originX - this.x) * 0.05;
+                this.y += (this.originY - this.y) * 0.05;
+                this.originY += this.speed;
+                if (this.originY > canvas.height) this.originY = -20;
             }
             draw() {
-                ctx.fillStyle = isFist ? "#ff00ff" : "rgba(0, 242, 255, 0.4)";
+                ctx.fillStyle = isFist ? var(--aura-magenta) : "rgba(0, 242, 255, 0.4)";
                 ctx.font = "14px Share Tech Mono";
                 ctx.fillText(this.char, this.x, this.y);
             }
@@ -134,7 +134,7 @@
         window.onload = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            for(let i=0; i<150; i++) drops.push(new Drop());
+            for(let i=0; i<200; i++) drops.push(new Drop());
             render();
         };
     </script>
