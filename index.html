@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v11</title>
+    <title>PF 2026 | AuraManifest Sync v12</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
@@ -29,7 +29,8 @@
 
         .menu-item {
             display: block; padding: 20px; margin-bottom: 10px; border: 1px solid rgba(0, 255, 204, 0.3);
-            color: #00ffcc; text-decoration: none; font-size: 13px; text-transform: uppercase; cursor: pointer;
+            color: #00ffcc; text-decoration: none; font-size: 11px; text-transform: uppercase; cursor: pointer;
+            line-height: 1.4;
         }
         .menu-item:hover { background: #00ffcc; color: #000; }
 
@@ -48,7 +49,7 @@
         }
         #ui-layer * { pointer-events: auto; }
 
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 320px; text-align: center; }
+        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 340px; text-align: center; font-size: 14px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px #00ffcc; }
         
         /* KONTAKTY - 10% ROZESTUP OD STŘEDU */
@@ -71,7 +72,7 @@
     <nav id="side-menu">
         <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
         <div class="menu-item" onclick="location.reload()">00. RESET STAGE</div>
-        <div class="menu-item" onclick="window.location.href='AMM.html'">02. OPEN AMM</div>
+        <div class="menu-item" onclick="window.location.href='AMM.html'">02. AuraAdmin | Cyberpunk Resonance</div>
         <div class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/', '_blank')">01. MDA REPOSITORY</div>
     </nav>
 
@@ -84,9 +85,9 @@
         <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-xs">AuraManifest Synchronization Engine</p>
         
         <div class="flex flex-col items-center">
-            <button class="btn" onclick="window.location.href='AMM.html'">[ SPUSTIT AMM STAGE ]</button>
+            <button class="btn" onclick="window.location.href='AMM.html'">[ AuraAdmin | Cyberpunk Resonance ]</button>
             <div class="h-px w-48 bg-cyan-900 my-6"></div>
-            <input type="text" id="remote-id-input" placeholder="INSERT ID" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[320px] text-white outline-none">
+            <input type="text" id="remote-id-input" placeholder="INSERT ID" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[340px] text-white outline-none">
             <button class="btn" onclick="alert('Sync Initialized')">[ SYNC NOKIA G42 ]</button>
         </div>
     </div>
@@ -101,7 +102,6 @@
             document.getElementById('side-menu').classList.toggle('open');
         };
 
-        // Číselná animace 2026
         const slots = ['n1', 'n2', 'n3', 'n4'];
         function updateNumbers() {
             let res = "";
@@ -118,7 +118,6 @@
         }
         setInterval(updateNumbers, 120);
 
-        // Matrix Background
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         let drops = [];
