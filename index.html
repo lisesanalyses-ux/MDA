@@ -36,7 +36,7 @@
         }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
-        /* Tlačidlá */
+        /* Tlačítka */
         .btn-cyber {
             position: relative; padding: 12px 40px; background: rgba(0, 0, 0, 0.8);
             text-transform: uppercase; font-weight: 800; letter-spacing: 4px; cursor: pointer;
@@ -230,14 +230,13 @@
             for(let i=0; i<100; i++) drops.push(new Drop());
             render();
             
-            // Inicializace dekodéru
             const stream = document.getElementById('ascii-decoder-stream');
             for(let i=0; i<25; i++) {
                 const s = document.createElement('span'); s.id = `sc-${i}`;
                 stream.appendChild(s);
             }
 
-            // Vylepšená logika dekodéru s 2026 matchingem
+            // Vylepšená logika dekodéru (v120ms refresh)
             setInterval(() => {
                 const match = { "10": "2", "11": "0", "12": "2", "13": "6" };
                 for(let i=0; i<25; i++) {
@@ -248,7 +247,7 @@
                             el.innerText = match[i]; 
                             el.className = "match-digit"; 
                         } else if (Math.random() > 0.5) {
-                            // Udržuje stabilitu zobrazení
+                            // Stabilní stav
                         } else {
                             el.innerText = chars[Math.floor(Math.random() * chars.length)];
                             el.className = "";
