@@ -32,7 +32,7 @@
             <button class="btn" onclick="initDisplayMode()">[ OPEN DISPLAY STAGE ]</button>
             <div class="h-px w-48 bg-emerald-900 my-8"></div>
             <input type="text" id="remote-id-input" placeholder="INSERT STAGE ID">
-            <button class="btn" onclick="initControllerMode()">[ SYNC NOKIA G42 ]</button>
+            <button class="btn" id="sync-btn" onclick="initControllerMode()">[ SYNC NOKIA G42 ]</button>
         </div>
     </div>
 
@@ -64,17 +64,47 @@
                     </div>`;
                 peerInfo.innerText = "ACCESS ID: " + id;
             });
-            peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
+            peer.on('connection', (c) => { 
+                conn = c; 
+                setupDataListener(); 
+                startEngine(); 
+            });
         }
 
+        // --- INTEGROVANÁ OPRAVENÁ FUNKCE ---
         function initControllerMode() {
-            const remoteId = document.getElementById('remote-id-input').value;
+            const remoteId = document.getElementById('remote-id-input').value.trim();
             if(!remoteId) return alert("ID Required");
+            
+            const btn = document.getElementById('sync-btn');
+            btn.innerText = "[ INITIALIZING... ]";
             isController = true;
-            peer = new Peer();
-            peer.on('open', () => {
-                conn = peer.connect(remoteId);
-                conn.on('open', () => { startEngine(); });
+
+            // 1. Vytvoříme instanci Peer
+            peer = new Peer(); 
+
+            peer.on('open', (id) => { 
+                console.log("Controller Peer ID: " + id);
+                peerInfo.innerText = "CONTROLLER ID: " + id;
+                
+                // 2. Teprve po otevření spojení se serverem se připojíme k Masteru
+                conn = peer.connect(remoteId); 
+                
+                conn.on('open', () => { 
+                    console.log("SYNC SUCCESSFUL");
+                    btn.innerText = "[ LINK ESTABLISHED ]";
+                    startEngine(); 
+                });
+
+                conn.on('error', (err) => {
+                    alert("Connection failed. Check Stage ID.");
+                    btn.innerText = "[ SYNC NOKIA G42 ]";
+                });
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                alert("PeerJS Error: " + err.type);
             });
         }
 
@@ -106,9 +136,19 @@
                         handY = lms[8].y;
                         isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.3);
                     } else { handX = -1000; }
-                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY, overload: systemOverload });
+                    
+                    if(conn && conn.open) {
+                        conn.send({ 
+                            x: handX, y: handY, fist: isFist, 
+                            gx: gravityX, gy: gravityY, 
+                            overload: systemOverload 
+                        });
+                    }
                 });
-                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
+                new Camera(videoElement, { 
+                    onFrame: async () => { await hands.send({image: videoElement}); }, 
+                    width: 640, height: 480 
+                }).start();
             } else {
                 for(let i=0; i<250; i++) particles.push(new Particle());
                 render();
@@ -116,10 +156,19 @@
         }
 
         function initSensors() {
-            window.addEventListener('deviceorientation', (e) => {
-                gravityX = (e.gamma / 45) * 0.25;
-                gravityY = (e.beta / 45) * 0.25;
-            });
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // Pro iOS zařízení
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response == 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                });
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+
+        function handleOrientation(e) {
+            gravityX = (e.gamma / 45) * 0.25;
+            gravityY = (e.beta / 45) * 0.25;
         }
 
         class Particle {
@@ -177,7 +226,10 @@
             requestAnimationFrame(render);
         }
 
-        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.onresize = () => { 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
+        };
     </script>
 </body>
 </html>
