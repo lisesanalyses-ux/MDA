@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v13.1</title>
+    <title>PF 2026 | AuraManifest Sync v13.5</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -31,8 +31,10 @@
             position: absolute; z-index: 50; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             background: radial-gradient(circle, rgba(5, 16, 16, 0.85) 0%, #000 100%);
-            transition: opacity 1s;
+            transition: all 1s ease-in-out;
         }
+
+        .ui-off { opacity: 0; pointer-events: none; transform: scale(1.1); }
         
         .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 100%; text-align: center; font-size: 13px; letter-spacing: 2px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; }
@@ -45,25 +47,8 @@
         #status-panel { display: none; margin-top: 15px; text-align: center; }
         #display-id { font-size: 2.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; letter-spacing: 4px; }
 
-        #number-stream {
-            position: absolute; left: 5%; top: 50%; transform: translateY(-50%);
-            z-index: 10; font-size: 5rem; font-weight: 800; color: rgba(0, 255, 204, 0.15);
-            display: flex; flex-direction: column; line-height: 1; pointer-events: none;
-        }
-
-        .promo-bubble { 
-            position: fixed; bottom: 8%; z-index: 1500; 
-            background: rgba(0, 20, 20, 0.95); border: 2px solid #00ffcc; 
-            padding: 12px 25px; border-radius: 50px; font-size: 11px; color: #00ffcc !important;
-            text-decoration: none; transition: 0.3s;
-        }
-        #link-web { left: 50%; transform: translateX(-50%); }
-
         .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; }
-        .flash { color: #ff00ff !important; text-shadow: 0 0 30px #ff00ff !important; }
-        
-        /* Skrytí UI vrstvy */
-        .ui-hidden { opacity: 0; pointer-events: none; }
+        .flash { color: #ff00ff !important; text-shadow: 0 0 50px #ff00ff !important; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -72,12 +57,8 @@
     
     <nav id="side-menu">
         <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
-        <div class="menu-item" onclick="location.reload()" style="cursor:pointer; color:#00ffcc; border:1px solid #00ffcc; padding:10px; margin-bottom:5px;">00. RESET STAGE</div>
+        <div class="menu-item cursor-pointer p-4 border border-cyan-800 mb-2 hover:bg-cyan-400 hover:text-black" onclick="location.reload()">00. RESET STAGE</div>
     </nav>
-
-    <div id="number-stream">
-        <div id="n1">0</div><div id="n2">0</div><div id="n3">0</div><div id="n4">0</div>
-    </div>
 
     <div id="ui-layer">
         <h1 id="main-title" class="text-8xl mb-2 glitch-2026">PF 2026</h1>
@@ -90,7 +71,7 @@
                 <div id="status-panel">
                     <p class="text-[9px] uppercase opacity-50 mb-1">Access Key for Remote:</p>
                     <span id="display-id">---</span>
-                    <p class="animate-pulse text-emerald-400 text-[8px] mt-2 tracking-widest">AWAITING CONTROL SIGNAL...</p>
+                    <p class="animate-pulse text-emerald-400 text-[8px] mt-2 tracking-widest uppercase">Awaiting connection...</p>
                 </div>
             </div>
 
@@ -102,19 +83,13 @@
         </div>
     </div>
 
-    <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">auraadmin.online</a>
-
     <canvas id="stage-canvas"></canvas>
 
     <script>
         let peer, conn;
-        let lastSend = 0;
-        const throttleMS = 30;
-        
-        // Globální proměnné pro pohyb scény
-        let tiltX = 0;
-        let tiltY = 0;
+        let tiltX = 0, tiltY = 0;
         let isSynced = false;
+        let lastSend = 0;
 
         function initDisplayMode() {
             peer = new Peer();
@@ -125,11 +100,10 @@
             peer.on('connection', (c) => {
                 conn = c;
                 isSynced = true;
-                // OKAMŽITĚ SKRÝT UI A SPUSTIT SCÉNU
-                document.getElementById('ui-layer').classList.add('ui-hidden');
+                // Skrytí UI vrstvy
+                document.getElementById('ui-layer').classList.add('ui-off');
                 
                 conn.on('data', (data) => {
-                    // Přijímáme náklon z telefonu
                     tiltX = data.x || 0;
                     tiltY = data.y || 0;
                     triggerFlash();
@@ -141,7 +115,6 @@
             const remoteId = document.getElementById('remote-id-input').value;
             if(!remoteId) return alert("Zadej ID z monitoru!");
 
-            // Žádost o povolení senzorů (pro iOS)
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const res = await DeviceOrientationEvent.requestPermission();
@@ -153,17 +126,12 @@
             peer.on('open', () => {
                 conn = peer.connect(remoteId);
                 conn.on('open', () => {
-                    alert("SYNCHRONIZOVÁNO. Nakláněj telefon!");
+                    document.getElementById('mode-selection').innerHTML = "<p class='text-magenta-500 animate-pulse'>SYNCHRONIZOVÁNO.<br>Nakláněj telefon pro ovládání scény.</p>";
                     window.addEventListener('deviceorientation', (e) => {
                         const now = Date.now();
-                        if (now - lastSend > throttleMS) {
-                            if (conn && conn.open) {
-                                conn.send({ 
-                                    x: parseFloat(e.gamma.toFixed(2)), 
-                                    y: parseFloat(e.beta.toFixed(2)) 
-                                });
-                                lastSend = now;
-                            }
+                        if (now - lastSend > 30) { // Throttling 30ms
+                            conn.send({ x: e.gamma, y: e.beta });
+                            lastSend = now;
                         }
                     });
                 });
@@ -172,10 +140,8 @@
 
         function triggerFlash() {
             const t = document.getElementById('main-title');
-            if(t) {
-                t.classList.add('flash');
-                setTimeout(() => t.classList.remove('flash'), 200);
-            }
+            t.classList.add('flash');
+            setTimeout(() => t.classList.remove('flash'), 150);
         }
 
         window.toggleMenu = () => document.getElementById('side-menu').classList.toggle('open');
@@ -194,18 +160,16 @@
             }
             update() { 
                 this.y += this.speed; 
-                
-                // POHYB Kapek podle telefonu (pokud je synchronizováno)
+                // Reakce na náklon telefonu
                 if(isSynced) {
-                    this.x += (tiltX * 0.2); 
+                    this.x += (tiltX * 0.15);
+                    this.y += (tiltY * 0.05);
                 }
-
                 if(this.y > canvas.height) this.reset();
                 if(this.x > canvas.width) this.x = 0;
                 if(this.x < 0) this.x = canvas.width;
             }
             draw() {
-                // Pokud je sync, svítí víc
                 ctx.fillStyle = isSynced ? "rgba(0, 255, 204, 0.4)" : "rgba(0, 255, 204, 0.15)";
                 ctx.font = "14px monospace";
                 ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
@@ -221,17 +185,8 @@
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<100; i++) drops.push(new Drop());
+            for(let i=0; i<120; i++) drops.push(new Drop());
             render();
-            
-            // Náhodná čísla v pozadí
-            setInterval(() => {
-                const slots = ['n1', 'n2', 'n3', 'n4'];
-                slots.forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.innerText = Math.floor(Math.random()*10);
-                });
-            }, 120);
         };
 
         window.onresize = () => {
