@@ -17,12 +17,10 @@
         .btn { border: 2px solid #00ffcc; padding: 12px 24px; cursor: pointer; margin: 8px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 280px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
         
-        /* PROMO BUBBLES - VYLEPŠENÉ */
-        .promo-bubble, .promo-bubble div { 
+        /* FIX BAREV BUBBLIN */
+        .promo-bubble, .promo-bubble div, .promo-bubble span { 
             color: #00ffcc !important; 
             text-decoration: none; 
-            font-size: 11px; 
-            letter-spacing: 1px; 
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -37,67 +35,29 @@
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.05);
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 11px;
         }
 
-        /* Pozicování 35% od okrajů směrem k centru */
         #link-web { left: 35%; transform: translateX(-50%); }
         #link-mail { right: 35%; transform: translateX(50%); }
 
         .promo-bubble:hover { 
             background: rgba(0, 255, 204, 0.2);
             border-color: #00ffcc;
-            transform: translateY(-8px) scale(1.05) translateX(var(--tw-translate-x));
-            box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
-        }
-        
-        .promo-bubble:hover div { color: #ffffff !important; }
-
-        .bubble-label { 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            font-size: 9px;
-            border-right: 1px solid rgba(0, 255, 204, 0.3);
-            padding-right: 12px;
-            opacity: 0.8;
-        }
-
-        .copy-notify {
-            position: absolute;
-            top: -45px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #00ffcc;
-            color: #000 !important;
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-weight: 800;
-            font-size: 10px;
-            display: none;
-            white-space: nowrap;
-        }
-
-        @media (max-width: 1024px) {
-            #link-web { left: 20%; }
-            #link-mail { right: 20%; }
+            transform: translateY(-10px) scale(1.1) translateX(var(--tw-translate-x, -50%));
         }
     </style>
 </head>
 <body>
 
     <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">
-        <div class="bubble-label">Web</div>
-        <div>auraadmin.online</div>
+        <span class="font-bold mr-2">WEB</span> auraadmin.online
     </a>
-
-    <div id="link-mail" class="promo-bubble" onclick="copyEmail()">
-        <div id="copy-status" class="copy-notify">E-MAIL ZKOPÍROVÁN!</div>
-        <div class="bubble-label">Kontakt</div>
-        <div style="font-size: 16px;">✉</div>
-        <div id="email-text">lisesanalyses@gmail.com</div>
-    </div>
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">
+        <span style="font-size: 18px; margin-right: 8px;">✉</span> lisesanalyses@gmail.com
+    </a>
 
     <div id="ui-layer">
         <h1 class="text-5xl mb-2 font-black italic">PF 2026</h1>
@@ -106,7 +66,7 @@
         <div id="mode-selection" class="flex flex-col items-center">
             <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ / TV ]</button>
             <div class="h-px w-32 bg-gray-800 my-4"></div>
-            <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY" class="bg-black border border-cyan-900 text-cyan-400 text-center p-3 mb-2 w-[280px]">
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY" class="bg-black border border-cyan-500 text-cyan-400 text-center p-3 mb-2 w-[280px] outline-none">
             <button class="btn" onclick="requestPermissions()">[ 2. SYNC NOKIA / IPHONE ]</button>
         </div>
     </div>
@@ -118,48 +78,32 @@
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         const videoElement = document.getElementById('input-video');
-        
         let peer, conn, isController = false;
         let particles = [];
         let handX = -1000, handY = -1000, isFist = false;
         let gravityX = 0, gravityY = 0;
         let audioCtx, oscillator, gainNode, filter;
-
         const CRYSTALS = ["PF", "2", "0", "2", "6"];
-
-        // Funkce pro kopírování e-mailu
-        function copyEmail() {
-            const email = "lisesanalyses@gmail.com";
-            navigator.clipboard.writeText(email).then(() => {
-                const status = document.getElementById('copy-status');
-                status.style.display = 'block';
-                setTimeout(() => { status.style.display = 'none'; }, 2000);
-                window.location.href = "mailto:" + email;
-            });
-        }
 
         async function requestPermissions() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') initSensors();
-                } catch (e) { console.error(e); }
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === 'granted') initSensors();
             } else { initSensors(); }
             initControllerMode();
         }
 
         function initAudio() {
+            if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             oscillator = audioCtx.createOscillator();
             gainNode = audioCtx.createGain();
             filter = audioCtx.createBiquadFilter();
             oscillator.type = 'sawtooth';
             filter.type = 'lowpass';
-            oscillator.connect(filter);
-            filter.connect(gainNode);
+            oscillator.connect(filter); filter.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            gainNode.gain.value = 0;
-            oscillator.start();
+            gainNode.gain.value = 0; oscillator.start();
         }
 
         function initDisplayMode() {
@@ -167,9 +111,8 @@
             peer = new Peer();
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
-                    <p class="text-[10px] opacity-50 mb-1 uppercase">Aethereon Sync Key:</p>
-                    <h2 class="text-6xl font-bold mb-6 text-white tracking-tighter">${id}</h2>
-                    <p class="animate-pulse text-cyan-400 text-[10px] tracking-[0.3em] uppercase text-center">ČEKÁM NA NOKIA / IPHONE...</p>`;
+                    <h2 class="text-6xl font-bold mb-4 text-white">${id}</h2>
+                    <p class="animate-pulse text-cyan-400 text-xs">ČEKÁM NA PŘIPOJENÍ...</p>`;
             });
             peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
@@ -193,8 +136,7 @@
 
         function initSensors() {
             window.addEventListener('deviceorientation', (e) => {
-                gravityX = (e.gamma / 45); 
-                gravityY = (e.beta / 45);
+                gravityX = (e.gamma / 45); gravityY = (e.beta / 45);
             });
         }
 
@@ -207,19 +149,19 @@
                 document.getElementById('link-web').style.display = 'none';
                 document.getElementById('link-mail').style.display = 'none';
                 const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-                hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5 });
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 0 });
                 hands.onResults(res => {
                     if(res.multiHandLandmarks?.[0]) {
                         const lms = res.multiHandLandmarks[0];
                         handX = (1 - lms[8].x); handY = lms[8].y;
-                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.25);
+                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.2);
                     } else { handX = -1000; }
                     if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
                 });
                 new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 }).start();
             } else {
-                for(let i=0; i<180; i++) particles.push(new Particle());
-                render();
+                for(let i=0; i<150; i++) particles.push(new Particle());
+                render(); // TATO ŘÁDKA VÁM CHYBĚLA!
             }
         }
 
@@ -227,42 +169,45 @@
             constructor() { this.zone = Math.floor(Math.random() * 5); this.reset(); }
             reset() {
                 this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
-                this.vx = 0; this.vy = 0; this.size = Math.random() * 4 + 12;
+                this.vx = 0; this.vy = 0; this.size = Math.random() * 5 + 10;
             }
             update() {
                 let zoneWidth = canvas.width / 5;
-                let targetX = (this.zone * zoneWidth) + (zoneWidth / 2) + (gravityX * 60);
-                let targetY = (canvas.height / 2) + (gravityY * 60);
+                let targetX = (this.zone * zoneWidth) + (zoneWidth / 2) + (gravityX * 50);
+                let targetY = (canvas.height / 2) + (gravityY * 50);
                 if (isFist && handX > -500) { targetX = handX; targetY = handY; }
-                this.vx += (targetX - this.x) * 0.03; this.vy += (targetY - this.y) * 0.03;
-                this.vx *= 0.92; this.vy *= 0.92;
+                this.vx += (targetX - this.x) * 0.02; this.vy += (targetY - this.y) * 0.02;
+                this.vx *= 0.93; this.vy *= 0.93;
                 this.x += this.vx; this.y += this.vy;
             }
             draw() {
                 let zoneWidth = canvas.width / 5;
                 let isActive = handX > (this.zone * zoneWidth) && handX < ((this.zone+1)*zoneWidth);
-                ctx.fillStyle = isActive || isFist ? "#fff" : "rgba(0, 255, 204, 0.25)";
+                ctx.fillStyle = isActive || isFist ? "#fff" : "rgba(0, 255, 204, 0.3)";
                 ctx.font = `${this.size}px JetBrains Mono`;
                 ctx.fillText(CRYSTALS[this.zone], this.x, this.y);
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Vykreslení zón
             let zoneWidth = canvas.width / 5;
             CRYSTALS.forEach((_, i) => {
                 let x = i * zoneWidth;
-                let active = handX > x && handX < x + zoneWidth;
-                ctx.strokeStyle = active ? "rgba(0, 255, 204, 0.7)" : "rgba(0, 255, 204, 0.08)";
-                ctx.strokeRect(x + 15, 60, zoneWidth - 30, canvas.height - 120);
+                ctx.strokeStyle = (handX > x && handX < x + zoneWidth) ? "#00ffcc" : "rgba(0, 255, 204, 0.1)";
+                ctx.strokeRect(x + 10, 50, zoneWidth - 20, canvas.height - 100);
             });
+
+            // Audio modulace
             if(audioCtx && handX > -500) {
-                let freq = 110 + (1 - handY / canvas.height) * 440;
+                let freq = 130 + (1 - handY / canvas.height) * 400;
                 oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.1);
-                filter.frequency.setTargetAtTime(300 + (handX/canvas.width)*2500, audioCtx.currentTime, 0.1);
-                gainNode.gain.setTargetAtTime(isFist ? 0.18 : 0.07, audioCtx.currentTime, 0.1);
+                gainNode.gain.setTargetAtTime(isFist ? 0.2 : 0.05, audioCtx.currentTime, 0.1);
             } else if(gainNode) { gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2); }
+
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
