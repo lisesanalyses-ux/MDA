@@ -2,163 +2,165 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v14</title>
+    <title>PF 2026 | AuraManifest Synchronization</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <style>
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
-        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; display: block; }
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
         
-        #ui-layer { 
-            position: absolute; z-index: 50; width: 100%; height: 100%; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: radial-gradient(circle, rgba(5, 16, 16, 0.85) 0%, #000 100%);
-            transition: opacity 1s ease-out;
-        }
+        /* UI DESIGN PODLE OBRÁZKŮ */
+        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); text-align: center; }
         
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 100%; text-align: center; font-size: 13px; letter-spacing: 2px; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; }
-        .btn-magenta { border-color: #ff00ff; color: #ff00ff; }
-        .btn-magenta:hover { background: #ff00ff; color: #000; box-shadow: 0 0 30px #ff00ff; }
+        .glitch-title { font-size: 5rem; font-weight: 900; font-style: italic; color: #fff; text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc; margin-bottom: 0.5rem; }
+        .sub-engine { font-size: 10px; letter-spacing: 0.6em; text-transform: uppercase; color: #00ffcc; opacity: 0.8; margin-bottom: 4rem; }
 
-        .control-box { background: rgba(0, 20, 20, 0.4); border: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; width: 380px; transition: 0.4s; }
-        #status-panel { display: none; margin-top: 15px; text-align: center; }
-        #display-id { font-size: 2.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; letter-spacing: 4px; }
+        .btn-frame { border: 2px solid #00ffcc; padding: 18px 40px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: all 0.3s; background: transparent; color: #00ffcc; letter-spacing: 4px; min-width: 320px; position: relative; }
+        .btn-frame:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; }
+        .btn-filled { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; border: none; }
 
-        .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; }
-        .flash { color: #ff00ff !important; text-shadow: 0 0 40px #ff00ff !important; transform: scale(1.1); }
+        .promo-bubble { position: fixed; bottom: 8%; z-index: 100; background: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.3); padding: 10px 20px; border-radius: 50px; backdrop-filter: blur(10px); color: #00ffcc; text-decoration: none; font-size: 10px; transition: 0.3s; }
+        .promo-bubble:hover { background: rgba(0, 255, 204, 0.2); transform: scale(1.1); }
+
+        #remote-input { background: transparent; border-bottom: 2px solid #00ffcc; color: #fff; text-align: center; padding: 10px; width: 280px; margin-bottom: 1.5rem; outline: none; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <h1 id="main-title" class="text-8xl mb-2 glitch-2026">PF 2026</h1>
-        <p id="sub-title" class="text-cyan-400 mb-12 tracking-[4px] uppercase text-[10px] opacity-60 text-center">AuraManifest Synchronization Engine</p>
-        
-        <div id="mode-selection" class="flex flex-col gap-8">
-            <div class="control-box">
-                <p class="text-[9px] text-cyan-400 mb-4 tracking-widest uppercase border-b border-cyan-900 pb-2">Step 01 // Host Device Mode</p>
-                <button class="btn" onclick="initDisplayMode()">[ Open Display Stage ]</button>
-                <div id="status-panel">
-                    <p class="text-[9px] uppercase opacity-50 mb-1">Access Key for Remote:</p>
-                    <span id="display-id">---</span>
-                </div>
-            </div>
+    <a href="https://auraadmin.online" target="_blank" class="promo-bubble" style="left: 50%; transform: translateX(-50%);">
+        [ AURAADMIN | CYBERPUNK RESONANCE ]
+    </a>
 
-            <div class="control-box" style="border-color: rgba(255, 0, 255, 0.2);">
-                <p class="text-[9px] text-magenta-500 mb-4 tracking-widest uppercase border-b border-magenta-900 pb-2" style="color:#ff00ff">Step 02 // Remote Device Mode</p>
-                <input type="text" id="remote-id-input" placeholder="PASTE SCREEN ID HERE" class="bg-black border border-magenta-500/50 text-center p-3 mb-4 w-full text-white outline-none focus:border-magenta-500 transition-all text-sm">
-                <button class="btn btn-magenta" onclick="initControllerMode()">[ Sync Device ]</button>
-            </div>
+    <div id="ui-layer">
+        <h1 class="glitch-title">PF 2026</h1>
+        <p class="sub-engine">AURAMANIFEST SYNCHRONIZATION ENGINE</p>
+        
+        <div id="mode-selection" class="flex flex-col items-center">
+            <button class="btn-frame" onclick="initDisplayMode()">[ OPEN DISPLAY STAGE ]</button>
+            <div class="h-px w-32 bg-cyan-900 my-10 opacity-30"></div>
+            <input type="text" id="remote-id-input" placeholder="PASTE STAGE ID" id="remote-input" class="bg-transparent border-b border-cyan-500 text-white text-center p-3 mb-6 w-[280px] outline-none tracking-[0.5em]">
+            <button class="btn-frame" onclick="requestPermissions()">[ SYNC DEVICE ]</button>
         </div>
     </div>
 
     <canvas id="stage-canvas"></canvas>
+    <video id="input-video" playsinline style="display:none;"></video>
 
     <script>
-        let peer, conn;
-        let lastSend = 0;
-        const throttleMS = 30;
-        let tiltX = 0;
-        let isSynced = false;
+        const canvas = document.getElementById('stage-canvas');
+        const ctx = canvas.getContext('2d');
+        const videoElement = document.getElementById('input-video');
+        let peer, conn, isController = false;
+        let particles = [];
+        let handX = -1000, handY = -1000, isFist = false;
+        let gravityX = 0, gravityY = 0;
+        const CRYSTALS = ["PF", "2", "0", "2", "6"];
 
-        // OPRAVA 1: Inicializace režimu monitoru se správným callbackem
+        // AUDIO KONTEXT PRO RESONANCI
+        let audioCtx, oscillator, gainNode;
+
+        async function requestPermissions() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        window.addEventListener('deviceorientation', (e) => {
+                            gravityX = (e.gamma / 45); 
+                            gravityY = (e.beta / 45);
+                        });
+                    }
+                } catch (e) { console.error(e); }
+            }
+            initControllerMode();
+        }
+
         function initDisplayMode() {
             peer = new Peer();
             peer.on('open', (id) => {
-                document.getElementById('status-panel').style.display = 'block';
-                document.getElementById('display-id').innerText = id;
+                document.getElementById('mode-selection').innerHTML = `
+                    <p class="text-[10px] opacity-50 mb-2 tracking-widest uppercase">ACCESS KEY:</p>
+                    <h2 class="text-7xl font-bold mb-8 text-white tracking-tighter shadow-cyan-500">${id}</h2>
+                    <p class="animate-pulse text-cyan-400 text-[9px] tracking-[0.4em] uppercase">Connecting digital aura...</p>`;
             });
-
-            peer.on('connection', (c) => {
-                conn = c;
-                isSynced = true;
-                
-                // Vizuální přechod po spojení
-                document.getElementById('mode-selection').style.display = 'none';
-                document.getElementById('sub-title').innerText = "SYSTEM ONLINE // REMOTE LINK ESTABLISHED";
-                document.getElementById('ui-layer').style.background = "transparent";
-                
-                conn.on('data', (data) => {
-                    tiltX = data.x;
-                    triggerFlash();
+            peer.on('connection', (c) => { 
+                conn = c; 
+                conn.on('data', (d) => {
+                    handX = d.x * canvas.width; handY = d.y * canvas.height;
+                    isFist = d.fist; gravityX = d.gx; gravityY = d.gy;
                 });
+                startEngine(); 
             });
         }
 
-        // OPRAVA 2: Zajištění odesílání dat z mobilu
-        async function initControllerMode() {
-            const remoteId = document.getElementById('remote-id-input').value;
-            if(!remoteId) return alert("Zadej ID z monitoru!");
-
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const res = await DeviceOrientationEvent.requestPermission();
-                    if(res !== 'granted') return alert("Povolte senzory pohybu.");
-                } catch(e) { console.error(e); }
-            }
-
+        function initControllerMode() {
+            isController = true;
             peer = new Peer();
             peer.on('open', () => {
-                conn = peer.connect(remoteId);
-                conn.on('open', () => {
-                    alert("SYNCHRONIZOVÁNO. Nakláněj telefon!");
-                    window.addEventListener('deviceorientation', (e) => {
-                        const now = Date.now();
-                        if (now - lastSend > throttleMS) {
-                            if (conn && conn.open) {
-                                conn.send({ x: parseFloat(e.gamma.toFixed(2)) });
-                                lastSend = now;
-                            }
-                        }
-                    });
-                });
+                const rId = document.getElementById('remote-id-input').value;
+                conn = peer.connect(rId);
+                conn.on('open', () => startEngine());
             });
         }
 
-        function triggerFlash() {
-            const t = document.getElementById('main-title');
-            t.classList.add('flash');
-            setTimeout(() => t.classList.remove('flash'), 150);
+        async function startEngine() {
+            document.getElementById('ui-layer').style.display = 'none';
+            canvas.style.display = 'block';
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+            if (isController) {
+                const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5 });
+                hands.onResults(res => {
+                    if(res.multiHandLandmarks?.[0]) {
+                        const lms = res.multiHandLandmarks[0];
+                        handX = (1 - lms[8].x); handY = lms[8].y;
+                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.25);
+                    } else { handX = -1000; }
+                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
+                });
+                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 }).start();
+            } else {
+                for(let i=0; i<150; i++) particles.push(new Particle());
+                render();
+            }
         }
 
-        // Matrix Engine
-        const canvas = document.getElementById('stage-canvas');
-        const ctx = canvas.getContext('2d');
-        let drops = [];
-
-        class Drop {
-            constructor() { this.reset(); }
-            reset() { 
-                this.x = Math.random() * canvas.width; 
-                this.y = Math.random() * -canvas.height; 
-                this.speed = Math.random() * 5 + 2; 
+        class Particle {
+            constructor() { this.zone = Math.floor(Math.random() * 5); this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.vx = 0; this.vy = 0; this.size = Math.random() * 5 + 14;
             }
-            update() { 
-                this.y += this.speed; 
-                if(isSynced) this.x += (tiltX * 0.25); // Reakce na telefon
-                if(this.y > canvas.height) this.reset();
+            update() {
+                let zoneWidth = canvas.width / 5;
+                let targetX = (this.zone * zoneWidth) + (zoneWidth / 2) + (gravityX * 50);
+                let targetY = (canvas.height / 2) + (gravityY * 50);
+                if (isFist && handX > -500) { targetX = handX; targetY = handY; }
+                this.vx += (targetX - this.x) * 0.04; this.vy += (targetY - this.y) * 0.04;
+                this.vx *= 0.9; this.vy *= 0.9;
+                this.x += this.vx; this.y += this.vy;
             }
             draw() {
-                ctx.fillStyle = isSynced ? "#00ffcc" : "rgba(0, 255, 204, 0.15)";
-                ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
+                let zoneWidth = canvas.width / 5;
+                let active = handX > (this.zone * zoneWidth) && handX < ((this.zone+1)*zoneWidth);
+                ctx.fillStyle = active || isFist ? "#fff" : "rgba(0, 255, 204, 0.3)";
+                ctx.shadowBlur = active || isFist ? 15 : 0;
+                ctx.shadowColor = "#00ffcc";
+                ctx.font = `${active ? this.size * 1.5 : this.size}px JetBrains Mono`;
+                ctx.fillText(CRYSTALS[this.zone], this.x, this.y);
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 8, 8, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            drops.forEach(d => { d.update(); d.draw(); });
+            particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
-
-        window.onload = () => {
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<120; i++) drops.push(new Drop());
-            render();
-        };
     </script>
 </body>
 </html>
