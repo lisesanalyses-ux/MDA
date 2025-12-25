@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v13.5</title>
+    <title>PF 2026 | AuraManifest Sync v15</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -15,40 +15,46 @@
             position: fixed; left: -320px; top: 0; width: 300px; height: 100vh;
             background: rgba(0, 15, 15, 0.98); border-right: 2px solid #00ffcc;
             z-index: 2000; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1);
-            padding: 100px 25px; box-shadow: 20px 0 80px rgba(0,0,0,1);
+            padding: 80px 25px; box-shadow: 20px 0 80px rgba(0,0,0,1);
         }
         #side-menu.open { left: 0; }
         
         .menu-trigger {
             position: fixed; left: 30px; top: 30px; z-index: 2100;
-            cursor: pointer; font-size: 28px; color: #00ffcc; 
-            background: rgba(0, 30, 30, 0.8); width: 60px; height: 60px; 
+            cursor: pointer; font-size: 24px; color: #00ffcc; 
+            background: rgba(0, 30, 30, 0.8); width: 50px; height: 50px; 
             display: flex; align-items: center; justify-content: center;
-            border: 2px solid #00ffcc; border-radius: 15px; backdrop-filter: blur(10px);
+            border: 1px solid #00ffcc; border-radius: 5px; backdrop-filter: blur(10px);
         }
 
         #ui-layer { 
             position: absolute; z-index: 50; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: radial-gradient(circle, rgba(5, 16, 16, 0.85) 0%, #000 100%);
+            background: radial-gradient(circle, rgba(5, 16, 16, 0.7) 0%, #000 100%);
             transition: all 1s ease-in-out;
         }
 
         .ui-off { opacity: 0; pointer-events: none; transform: scale(1.1); }
         
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 100%; text-align: center; font-size: 13px; letter-spacing: 2px; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; }
+        .btn { border: 1px solid #00ffcc; padding: 12px 24px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 100%; text-align: center; font-size: 11px; letter-spacing: 2px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
         
-        .btn-magenta { border-color: #ff00ff; color: #ff00ff; }
-        .btn-magenta:hover { background: #ff00ff; color: #000; box-shadow: 0 0 30px #ff00ff; }
+        .control-box { background: rgba(0, 20, 20, 0.4); border: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; width: 340px; }
 
-        .control-box { background: rgba(0, 20, 20, 0.4); border: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; width: 380px; }
+        #display-id { font-size: 2.2rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; letter-spacing: 4px; }
 
-        #status-panel { display: none; margin-top: 15px; text-align: center; }
-        #display-id { font-size: 2.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; letter-spacing: 4px; }
+        /* Levá číselná řada */
+        #number-stream {
+            position: fixed; left: 20px; top: 50%; transform: translateY(-50%);
+            z-index: 100; display: flex; flex-direction: column; gap: 10px;
+            font-size: 1.5rem; font-weight: 800; opacity: 0.4; pointer-events: none;
+        }
 
         .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; }
-        .flash { color: #ff00ff !important; text-shadow: 0 0 50px #ff00ff !important; transform: scale(1.05); }
+        .flash { color: #ff00ff !important; text-shadow: 0 0 50px #ff00ff !important; }
+        
+        .menu-link { display: block; padding: 15px; border-bottom: 1px solid rgba(0,255,204,0.2); color: #00ffcc; text-decoration: none; font-size: 12px; transition: 0.3s; }
+        .menu-link:hover { background: rgba(0,255,204,0.1); padding-left: 25px; }
     </style>
 </head>
 <body>
@@ -56,29 +62,37 @@
     <div class="menu-trigger" onclick="toggleMenu()">☰</div>
     
     <nav id="side-menu">
-        <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
-        <div class="menu-item cursor-pointer p-4 border border-cyan-800 mb-2 hover:bg-cyan-400 hover:text-black" onclick="location.reload()">00. RESET STAGE</div>
+        <h3 class="text-[10px] opacity-50 mb-6 tracking-[4px] uppercase">Navigation</h3>
+        <a href="#" class="menu-link" onclick="location.reload()">01. Reset Stage</a>
+        <a href="Auramanifest.html" class="menu-link">02. AuraManifest System</a>
+        <a href="AMM.html" class="menu-link">03. AMM Module</a>
+        <div class="mt-10 p-4 border border-cyan-900 text-[9px] opacity-40">
+            SYSTEM STATUS: ONLINE<br>CORE: v15.0.4
+        </div>
     </nav>
 
+    <div id="number-stream">
+        <div id="d1">2</div><div id="d2">0</div><div id="d3">2</div><div id="d4">6</div>
+    </div>
+
     <div id="ui-layer">
-        <h1 id="main-title" class="text-8xl mb-2 glitch-2026">PF 2026</h1>
-        <p class="text-cyan-400 mb-12 tracking-[4px] uppercase text-[10px] opacity-60 text-center">AuraManifest Synchronization Engine</p>
+        <h1 id="main-title" class="text-7xl mb-2 glitch-2026">PF 2026</h1>
+        <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-[9px] opacity-60">AuraManifest Synchronization Engine</p>
         
-        <div id="mode-selection" class="flex flex-col gap-8">
+        <div id="mode-selection" class="flex flex-col gap-6">
             <div class="control-box">
-                <p class="text-[9px] text-cyan-400 mb-4 tracking-widest uppercase border-b border-cyan-900 pb-2">Step 01 // Host Device Mode</p>
-                <button class="btn" onclick="initDisplayMode()">[ Open Your Screen Stage ]</button>
-                <div id="status-panel">
-                    <p class="text-[9px] uppercase opacity-50 mb-1">Access Key for Remote:</p>
+                <p class="text-[8px] text-cyan-400 mb-4 tracking-widest uppercase border-b border-cyan-900 pb-2">Step 01 // Host Mode</p>
+                <button class="btn" onclick="initDisplayMode()">[ Open Screen Stage ]</button>
+                <div id="status-panel" class="hidden mt-4 text-center">
+                    <p class="text-[8px] uppercase opacity-50 mb-1">ID:</p>
                     <span id="display-id">---</span>
-                    <p class="animate-pulse text-emerald-400 text-[8px] mt-2 tracking-widest uppercase">Awaiting connection...</p>
                 </div>
             </div>
 
-            <div class="control-box" style="border-color: rgba(255, 0, 255, 0.2);">
-                <p class="text-[9px] text-magenta-500 mb-4 tracking-widest uppercase border-b border-magenta-900 pb-2" style="color:#ff00ff">Step 02 // Remote Device Mode</p>
-                <input type="text" id="remote-id-input" placeholder="PASTE SCREEN ID HERE" class="bg-black border border-magenta-500/50 text-center p-3 mb-4 w-full text-white outline-none focus:border-magenta-500 transition-all text-sm">
-                <button class="btn btn-magenta" onclick="initControllerMode()">[ Sync Device ]</button>
+            <div class="control-box">
+                <p class="text-[8px] text-magenta-500 mb-4 tracking-widest uppercase border-b border-magenta-900 pb-2">Step 02 // Remote Mode</p>
+                <input type="text" id="remote-id-input" placeholder="PASTE ID" class="bg-black border border-cyan-900 text-center p-2 mb-4 w-full text-white outline-none focus:border-cyan-400 transition-all text-xs">
+                <button class="btn" onclick="initControllerMode()">[ Sync Device ]</button>
             </div>
         </div>
     </div>
@@ -90,46 +104,45 @@
         let tiltX = 0, tiltY = 0;
         let isSynced = false;
         let lastSend = 0;
+        
+        // Ghost Messages (pro odhalování textu)
+        const GHOST_TEXTS = ["AuraManifest", "CORE_SYNC", "PF_2026", "PROTOCOL_0", "INIT_SEQUENCE", "MANIFEST_READY"];
+        let ghosts = [];
 
         function initDisplayMode() {
             peer = new Peer();
             peer.on('open', (id) => {
-                document.getElementById('status-panel').style.display = 'block';
+                document.getElementById('status-panel').classList.remove('hidden');
                 document.getElementById('display-id').innerText = id;
             });
             peer.on('connection', (c) => {
                 conn = c;
                 isSynced = true;
-                // Skrytí UI vrstvy
                 document.getElementById('ui-layer').classList.add('ui-off');
-                
                 conn.on('data', (data) => {
-                    tiltX = data.x || 0;
-                    tiltY = data.y || 0;
-                    triggerFlash();
+                    tiltX = data.x || 0; tiltY = data.y || 0;
+                    if(Math.abs(tiltX) > 20) triggerFlash();
                 });
             });
         }
 
         async function initControllerMode() {
             const remoteId = document.getElementById('remote-id-input').value;
-            if(!remoteId) return alert("Zadej ID z monitoru!");
+            if(!remoteId) return alert("Chybí ID!");
 
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const res = await DeviceOrientationEvent.requestPermission();
-                    if(res !== 'granted') return alert("Povolte senzory pohybu.");
-                } catch(e) { console.error(e); }
+            if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+                const res = await DeviceOrientationEvent.requestPermission();
+                if(res !== 'granted') return;
             }
 
             peer = new Peer();
             peer.on('open', () => {
                 conn = peer.connect(remoteId);
                 conn.on('open', () => {
-                    document.getElementById('mode-selection').innerHTML = "<p class='text-magenta-500 animate-pulse'>SYNCHRONIZOVÁNO.<br>Nakláněj telefon pro ovládání scény.</p>";
+                    document.getElementById('mode-selection').innerHTML = "<p class='text-cyan-400 animate-pulse text-xs tracking-widest uppercase'>Connected. Tilt your device.</p>";
                     window.addEventListener('deviceorientation', (e) => {
                         const now = Date.now();
-                        if (now - lastSend > 30) { // Throttling 30ms
+                        if (now - lastSend > 30) {
                             conn.send({ x: e.gamma, y: e.beta });
                             lastSend = now;
                         }
@@ -141,12 +154,11 @@
         function triggerFlash() {
             const t = document.getElementById('main-title');
             t.classList.add('flash');
-            setTimeout(() => t.classList.remove('flash'), 150);
+            setTimeout(() => t.classList.remove('flash'), 100);
         }
 
         window.toggleMenu = () => document.getElementById('side-menu').classList.toggle('open');
 
-        // Matrix background logic
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         let drops = [];
@@ -156,23 +168,38 @@
             reset() { 
                 this.x = Math.random() * canvas.width; 
                 this.y = Math.random() * -canvas.height; 
-                this.speed = Math.random() * 4 + 2; 
+                this.speed = Math.random() * 5 + 2; 
             }
             update() { 
                 this.y += this.speed; 
-                // Reakce na náklon telefonu
-                if(isSynced) {
-                    this.x += (tiltX * 0.15);
-                    this.y += (tiltY * 0.05);
-                }
+                if(isSynced) this.x += (tiltX * 0.1);
                 if(this.y > canvas.height) this.reset();
-                if(this.x > canvas.width) this.x = 0;
-                if(this.x < 0) this.x = canvas.width;
             }
             draw() {
-                ctx.fillStyle = isSynced ? "rgba(0, 255, 204, 0.4)" : "rgba(0, 255, 204, 0.15)";
-                ctx.font = "14px monospace";
+                ctx.fillStyle = isSynced ? "rgba(0, 255, 204, 0.4)" : "rgba(0, 255, 204, 0.1)";
+                ctx.font = "12px monospace";
                 ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
+            }
+        }
+
+        class GhostMessage {
+            constructor() { this.init(); }
+            init() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.text = GHOST_TEXTS[Math.floor(Math.random()*GHOST_TEXTS.length)];
+                this.opacity = 0;
+                this.fadeSpeed = 0.005 + Math.random() * 0.01;
+                this.active = true;
+            }
+            draw() {
+                // Odhalování textu na základě náklonu a času
+                let targetOpacity = isSynced ? Math.abs(tiltX/50) : 0.1;
+                this.opacity += (targetOpacity - this.opacity) * 0.05;
+                ctx.fillStyle = `rgba(0, 255, 204, ${this.opacity})`;
+                ctx.font = "bold 40px JetBrains Mono";
+                ctx.fillText(this.text, this.x + (tiltX * 0.5), this.y + (tiltY * 0.5));
+                if(this.opacity < 0.01 && !isSynced) this.init();
             }
         }
 
@@ -180,18 +207,31 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drops.forEach(d => { d.update(); d.draw(); });
+            ghosts.forEach(g => g.draw());
             requestAnimationFrame(render);
         }
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<120; i++) drops.push(new Drop());
+            for(let i=0; i<100; i++) drops.push(new Drop());
+            for(let i=0; i<3; i++) ghosts.push(new GhostMessage());
             render();
-        };
-
-        window.onresize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            
+            // Levá číselná řada - animace
+            setInterval(() => {
+                const ids = ['d1', 'd2', 'd3', 'd4'];
+                const target = [2, 0, 2, 6];
+                ids.forEach((id, i) => {
+                    const el = document.getElementById(id);
+                    if(Math.random() > 0.8) {
+                        el.innerText = target[i];
+                        el.style.opacity = 1;
+                    } else {
+                        el.innerText = Math.floor(Math.random()*10);
+                        el.style.opacity = 0.3;
+                    }
+                });
+            }, 150);
         };
     </script>
 </body>
