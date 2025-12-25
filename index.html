@@ -17,93 +17,88 @@
             z-index: 1000; background-size: 100% 3px, 3px 100%; pointer-events: none;
         }
 
-        .main-title {
-            font-size: 5rem; font-weight: 900; letter-spacing: 15px;
-            text-shadow: 0 0 20px var(--aura-cyan); margin-bottom: 5px;
-            animation: glow 2s infinite alternate;
+        /* SVISLÝ ASCII PRUH */
+        #ascii-decoder-stream {
+            position: fixed; left: 15%; top: 0; height: 100vh; width: 40px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            gap: 2px; font-size: 16px; color: rgba(0, 242, 255, 0.3); z-index: 100;
+            pointer-events: none; text-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
         }
-        @keyframes glow { from { opacity: 0.8; } to { opacity: 1; text-shadow: 0 0 40px var(--aura-cyan); } }
+        .match-digit { color: #fff; font-weight: bold; font-size: 24px; text-shadow: 0 0 15px var(--aura-cyan); background: rgba(0, 242, 255, 0.2); padding: 2px 6px; }
+        .dissolve-effect { animation: dissolve 0.5s ease-out forwards; }
+        @keyframes dissolve { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; filter: blur(8px); } }
 
-        /* HUD BACK BUTTON - NOVÝ DESIGN */
-        .back-btn {
-            position: absolute; top: 30px; left: 30px; z-index: 5001;
-            width: 320px; height: 28px; /* Dlouhé a velmi nízké */
-            background: rgba(0, 0, 0, 0.6);
-            border-left: 4px solid var(--aura-cyan);
-            border-right: 1px solid rgba(0, 242, 255, 0.2);
-            color: var(--aura-cyan);
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 12px;
-            font-size: 9px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            backdrop-filter: blur(10px);
-            clip-path: polygon(0 0, 95% 0, 100% 50%, 95% 100%, 0 100%); /* Technický střih konce */
-        }
-
-        .back-btn:hover {
-            width: 380px;
-            background: rgba(0, 242, 255, 0.15);
-            border-left-width: 8px;
-            box-shadow: -10px 0 20px rgba(0, 242, 255, 0.2);
-        }
-
-        .back-btn .status-dot {
-            width: 4px; height: 4px; background: var(--aura-cyan);
-            box-shadow: 0 0 8px var(--aura-cyan);
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        /* TLAČÍTKA HLAVNÍ */
-        .btn-cyber {
-            position: relative; padding: 18px 40px; background: rgba(0, 0, 0, 0.8);
-            text-transform: uppercase; font-weight: 800; letter-spacing: 3px; cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); border: 2px solid var(--clr);
-            color: var(--clr); box-shadow: inset 0 0 15px var(--clr), 0 0 10px rgba(0,0,0,0.5);
-            overflow: hidden; width: 360px;
-        }
-        .btn-cyber:hover { background: var(--clr); color: #000; box-shadow: 0 0 40px var(--clr); transform: translateY(-2px); }
-        .cyan-btn { --clr: var(--aura-cyan); }
-        .magenta-btn { --clr: var(--aura-magenta); }
-
-        /* MODAL FRAME */
-        #manifest-frame-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 5000; display: none;
-        }
-        #manifest-frame-container.active { display: block; }
-
-        /* SIDEBAR A OSTATNÍ STYLY ZACHOVÁNY */
+        /* SIDEBAR & BUTTONS */
         #side-menu {
             position: fixed; left: -350px; top: 0; width: 340px; height: 100vh;
-            background: rgba(0, 10, 10, 0.98); border-right: 3px solid var(--aura-cyan);
-            z-index: 2000; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1);
-            padding: 100px 30px;
+            background: rgba(0, 8, 8, 0.95); border-right: 2px solid var(--aura-cyan);
+            z-index: 2000; transition: 0.6s cubic-bezier(0.85, 0, 0.15, 1);
+            padding: 100px 20px 20px 20px; box-shadow: 20px 0 50px rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
         }
         #side-menu.open { left: 0; }
+
         .menu-item {
-            display: block; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(0, 242, 255, 0.2);
-            color: var(--aura-cyan); text-decoration: none; font-size: 18px;
-            text-transform: uppercase; cursor: pointer; text-align: center; transition: 0.3s;
+            position: relative; display: block; padding: 15px 20px; margin-bottom: 10px;
+            border: 1px solid rgba(0, 242, 255, 0.1); background: rgba(0, 20, 20, 0.4);
+            color: var(--aura-cyan); text-decoration: none; font-size: 14px;
+            text-transform: uppercase; cursor: pointer; transition: 0.3s all;
+            overflow: hidden; letter-spacing: 2px;
         }
-        .menu-item:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 20px var(--aura-cyan); }
         
-        .menu-trigger {
-            position: fixed; left: 30px; top: 30px; z-index: 2100;
-            cursor: pointer; font-size: 32px; color: var(--aura-cyan); 
-            background: rgba(0, 20, 20, 0.8); width: 70px; height: 70px; 
-            display: flex; align-items: center; justify-content: center;
-            border: 2px solid var(--aura-cyan); border-radius: 15px;
+        /* Hover Effect: Glitch Shine */
+        .menu-item::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        .menu-item:hover::before { left: 100%; }
+        .menu-item:hover {
+            background: rgba(0, 242, 255, 0.1); border-color: var(--aura-cyan);
+            padding-left: 30px; box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.2);
+            text-shadow: 0 0 8px var(--aura-cyan);
+        }
+        .menu-item.danger:hover {
+            border-color: var(--aura-magenta); color: var(--aura-magenta);
+            box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.2);
+            text-shadow: 0 0 8px var(--aura-magenta);
         }
 
+        /* PROMO BUBLINY */
+        .promo-bubble { 
+            position: fixed; bottom: 30px; border: 1px solid var(--aura-cyan); 
+            padding: 8px 18px; border-radius: 4px; font-size: 11px; 
+            background: rgba(0,0,0,0.9); text-decoration: none; color: var(--aura-cyan); 
+            z-index: 1500; transition: 0.3s ease; display: flex; align-items: center; gap: 8px;
+        }
+        #link-web { left: 40%; transform: translateX(-50%); } 
+        #link-mail { right: 40%; transform: translateX(50%); }
+        .promo-bubble:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 20px var(--aura-cyan); }
+
+        /* BACK BUTTON */
+        .back-btn {
+            position: absolute; top: 25px; left: 25px; z-index: 5001;
+            width: 320px; height: 26px; background: rgba(0, 0, 0, 0.8);
+            border-left: 4px solid var(--aura-cyan); color: var(--aura-cyan);
+            cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; font-size: 9px; letter-spacing: 4px;
+            clip-path: polygon(0 0, 96% 0, 100% 50%, 96% 100%, 0 100%); transition: 0.4s;
+        }
+        .back-btn:hover { width: 380px; background: rgba(0, 242, 255, 0.1); }
+
+        .btn-cyber {
+            padding: 18px 40px; background: rgba(0, 0, 0, 0.8);
+            text-transform: uppercase; font-weight: 800; letter-spacing: 3px; cursor: pointer;
+            transition: 0.3s; border: 2px solid var(--clr); color: var(--clr); width: 360px;
+        }
+        .cyan-btn { --clr: var(--aura-cyan); }
+        .magenta-btn { --clr: var(--aura-magenta); }
+        .menu-trigger { position: fixed; left: 30px; top: 30px; z-index: 2100; cursor: pointer; font-size: 32px; color: var(--aura-cyan); background: rgba(0, 20, 20, 0.8); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--aura-cyan); border-radius: 15px; }
+        #manifest-frame-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; }
+        #manifest-frame-container.active { display: block; }
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         #ui-layer * { pointer-events: auto; }
         canvas { position: absolute; top: 0; left: 0; z-index: 5; }
-        #ascii-decoder-stream { position: fixed; left: 25%; top: 0; height: 100vh; width: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; font-size: 16px; color: rgba(0, 242, 255, 0.3); z-index: 100; pointer-events: none; }
     </style>
 </head>
 <body class="scanlines">
@@ -111,17 +106,36 @@
     <div class="menu-trigger" onclick="toggleMenu()">☰</div>
     
     <nav id="side-menu">
-        <h3 class="text-[12px] opacity-40 mb-10 tracking-[8px] text-center uppercase">System Master Access</h3>
-        <div class="menu-item" onclick="location.reload()">00. REBOOT SYSTEM</div>
-        <div class="menu-item" onclick="openAuraManifest()">01. AuraManifest</div>
-        <div class="menu-item" onclick="toggleMenu()">02. TERMINATE</div>
+        <h3 class="text-[10px] opacity-40 mb-6 tracking-[8px] text-center uppercase">Aura OS v14.1 Master</h3>
+        
+        <div class="menu-item" onclick="openAuraManifest()">
+            <span class="opacity-50 mr-2">01</span> [ LOAD AURAMANIFEST ]
+        </div>
+        <div class="menu-item" onclick="alert('Network: Scanning for nodes...')">
+            <span class="opacity-50 mr-2">02</span> [ NETWORK MESH ]
+        </div>
+        <div class="menu-item" onclick="alert('Security: Firewalls active')">
+            <span class="opacity-50 mr-2">03</span> [ CRYPTO SHIELD ]
+        </div>
+        <div class="menu-item" onclick="alert('Logs: Showing 0 events')">
+            <span class="opacity-50 mr-2">04</span> [ SYSTEM LOGS ]
+        </div>
+        
+        <div class="mt-20 border-t border-cyan-900 pt-6">
+            <div class="menu-item danger" onclick="location.reload()">
+                <span class="opacity-50 mr-2">88</span> [ REBOOT SYSTEM ]
+            </div>
+            <div class="menu-item danger" onclick="toggleMenu()">
+                <span class="opacity-50 mr-2">99</span> [ TERMINATE ]
+            </div>
+        </div>
     </nav>
 
     <div id="manifest-frame-container">
         <button class="back-btn" onclick="closeAuraManifest()">
-            <div class="flex items-center gap-4">
-                <div class="status-dot"></div>
-                <span>Terminal.Exit_Sequence</span>
+            <div class="flex items-center gap-3">
+                <div class="w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>
+                <span>SYS.BACK_TO_CORE</span>
             </div>
             <span class="opacity-40 font-bold">[ ESC ]</span>
         </button>
@@ -131,76 +145,80 @@
     <div id="ascii-decoder-stream"></div>
 
     <div id="ui-layer">
-        <h1 class="main-title">PF 2026</h1>
-        <div id="manifest-block" class="mb-12 text-center uppercase tracking-[4px] px-10 max-w-2xl h-12"></div>
+        <h1 class="text-6xl font-black tracking-[15px] mb-4 text-center">PF 2026</h1>
+        <div id="manifest-block" class="mb-12 text-center uppercase tracking-[4px]">Aura Intelligence Integrated</div>
         
         <div id="sync-controls" class="flex flex-col items-center gap-6">
-            <div class="flex flex-col items-center">
-                <span class="text-[10px] tracking-[4px] mb-2 opacity-50 uppercase">Master Display</span>
-                <button class="btn-cyber cyan-btn" onclick="initHost()">[ Initialize Stage ]</button>
-            </div>
-            <div class="h-[1px] w-40 bg-cyan-500/20 my-2"></div>
-            <div class="flex flex-col items-center">
-                <span class="text-[10px] tracking-[4px] mb-2 opacity-50 uppercase">Remote Controller</span>
-                <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="bg-black/50 border border-cyan-500/30 p-4 text-center w-[360px] outline-none mb-2">
-                <button class="btn-cyber magenta-btn" onclick="requestPermissions()">[ Sync Mobile ]</button>
-            </div>
+            <button class="btn-cyber cyan-btn" onclick="initHost()">[ Initialize Stage ]</button>
+            <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="bg-black/50 border border-cyan-500/30 p-4 text-center w-[360px] outline-none text-white font-mono">
+            <button class="btn-cyber magenta-btn" onclick="requestPermissions()">[ Sync Mobile ]</button>
         </div>
     </div>
+
+    <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">
+        <span>🌐</span> auraadmin.online
+    </a>
+
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">
+        <span>✉</span> lisesanalyses@gmail.com
+    </a>
 
     <canvas id="stage-canvas"></canvas>
 
     <script>
-        // ... Logika zůstává stejná jako v předchozím kódu ...
-        let peer, conn, isSynced = false;
-        let gravityX = 0, gravityY = 0;
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
 
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
-
         function openAuraManifest() {
-            const container = document.getElementById('manifest-frame-container');
-            const iframe = document.getElementById('manifest-iframe');
-            iframe.src = 'https://lisesanalyses-ux.github.io/MDA/AuraManifest.html';
-            container.classList.add('active');
+            document.getElementById('manifest-iframe').src = 'https://lisesanalyses-ux.github.io/MDA/AuraManifest.html';
+            document.getElementById('manifest-frame-container').classList.add('active');
             toggleMenu();
         }
-
         function closeAuraManifest() {
-            const container = document.getElementById('manifest-frame-container');
             document.getElementById('manifest-iframe').src = '';
-            container.classList.remove('active');
+            document.getElementById('manifest-frame-container').classList.remove('active');
         }
 
-        // Matrix Rain / Drops Logic
-        let drops = [];
-        class Drop {
-            constructor() { this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 4 + 2; }
-            update() { 
-                this.y += this.speed + (gravityY * 10); 
-                this.x += (gravityX * 5);
-                if (this.y > canvas.height) this.reset(); 
-            }
-            draw() { 
-                ctx.fillStyle = isSynced ? "rgba(0, 242, 255, 0.5)" : "rgba(0, 242, 255, 0.15)"; 
-                ctx.font = "14px Share Tech Mono";
-                ctx.fillText(Math.floor(Math.random()*10), this.x, this.y); 
-            }
+        // ASCII LOGIC
+        const asciiContainer = document.getElementById('ascii-decoder-stream');
+        const streamSize = 30; 
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*§";
+        for(let i=0; i<streamSize; i++) {
+            const span = document.createElement('span');
+            span.id = `ascii-${i}`;
+            asciiContainer.appendChild(span);
         }
 
-        function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            drops.forEach(d => { d.update(); d.draw(); });
-            requestAnimationFrame(render);
-        }
+        let tick = 0;
+        setInterval(() => {
+            tick++;
+            const cyclePos = tick % 60;
+            const matchSequence = { "12": "2", "13": "0", "14": "2", "15": "6" };
+            for(let i=0; i<streamSize; i++) {
+                const el = document.getElementById(`ascii-${i}`);
+                if (matchSequence[i] && cyclePos > 30 && cyclePos <= 50) {
+                    el.innerText = matchSequence[i];
+                    el.className = cyclePos > 45 ? "match-digit dissolve-effect" : "match-digit";
+                } else {
+                    el.innerText = chars[Math.floor(Math.random()*chars.length)];
+                    el.className = "";
+                }
+            }
+        }, 80);
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<100; i++) drops.push(new Drop());
             render();
         };
+
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(render);
+        }
+
+        function initHost() { alert("Uplink Start..."); }
+        function requestPermissions() { alert("Sync Active."); }
     </script>
 </body>
 </html>
