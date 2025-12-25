@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | Universal Sonic Aura</title>
+    <title>PF 2026 | Aethereon Edition</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -16,21 +16,20 @@
         .btn { border: 2px solid #00ffcc; padding: 12px 24px; cursor: pointer; margin: 8px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 280px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
         #remote-id-input { background: #111; border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; width: 280px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #f00; }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
         <h1 class="text-5xl mb-2 font-black italic">PF 2026</h1>
-        <p class="mb-8 text-xs tracking-widest opacity-50 uppercase">Universal Multisensory Sync</p>
+        <p class="mb-8 text-xs tracking-widest opacity-50 uppercase">Aethereon Audio-Visual Sync</p>
         
         <div id="mode-selection" class="flex flex-col items-center">
-            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ / TV ]</button>
+            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT AETHEREON STAGE ]</button>
             <div class="h-px w-32 bg-gray-800 my-4"></div>
             <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY">
             <button id="ios-btn" class="btn" onclick="requestPermissions()">[ 2. SYNC NOKIA / IPHONE ]</button>
-            <p class="text-[10px] mt-4 opacity-40">TIP: iPhone uživatelé musí kliknout na tlačítko 2 pro aktivaci senzorů.</p>
+            <p class="text-[10px] mt-4 opacity-40 italic">TIP: Sevřením pěsti složíte kód roku 2026.</p>
         </div>
     </div>
 
@@ -46,19 +45,17 @@
         let particles = [];
         let handX = -1000, handY = -1000, isFist = false;
         let gravityX = 0, gravityY = 0.1;
-        let audioCtx, oscillator, gainNode;
+        
+        // --- AETHEREON AUDIO ENGINE ---
+        let audioCtx, oscillator, gainNode, biquadFilter;
 
-        // --- OPTIMALIZACE PRO IPHONE & AUDIO ---
         async function requestPermissions() {
-            // Žádost o senzory pro iOS
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const permission = await DeviceOrientationEvent.requestPermission();
                     if (permission === 'granted') initSensors();
                 } catch (e) { console.error(e); }
-            } else {
-                initSensors(); // Pro Android a ostatní
-            }
+            } else { initSensors(); }
             initControllerMode();
         }
 
@@ -66,22 +63,28 @@
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             oscillator = audioCtx.createOscillator();
             gainNode = audioCtx.createGain();
-            oscillator.type = 'sine'; // Jemnější zvuk pro PF
-            oscillator.connect(gainNode);
+            biquadFilter = audioCtx.createBiquadFilter();
+
+            oscillator.type = 'sine';
+            biquadFilter.type = "lowpass";
+            biquadFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
+
+            oscillator.connect(biquadFilter);
+            biquadFilter.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            gainNode.gain.value = 0;
+            
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
             oscillator.start();
         }
 
-        // --- CORE LOGIKA ---
         function initDisplayMode() {
             initAudio();
             peer = new Peer();
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
-                    <p class="text-xs mb-2">PŘÍSTUPOVÝ KÓD:</p>
-                    <h2 class="text-6xl font-bold mb-6">${id}</h2>
-                    <p class="animate-pulse">ČEKÁM NA OVLADAČ...</p>`;
+                    <p class="text-xs mb-2 uppercase opacity-50 text-cyan-500">Aethereon Access Key:</p>
+                    <h2 class="text-6xl font-bold mb-6 text-white tracking-tighter">${id}</h2>
+                    <p class="animate-pulse text-cyan-400">WAITING FOR QUANTUM LINK...</p>`;
             });
             peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
@@ -117,60 +120,81 @@
 
             if (isController) {
                 const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-                // OPTIMALIZACE: Snížení komplexnosti modelu pro starší telefony
                 hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5 });
                 hands.onResults(res => {
                     if(res.multiHandLandmarks?.[0]) {
                         const lms = res.multiHandLandmarks[0];
                         handX = (1 - lms[8].x); handY = lms[8].y;
-                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.3);
+                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.35);
                     } else { handX = -1000; }
                     if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
                 });
-                // OPTIMALIZACE: Nižší rozlišení kamery (320x240)
                 new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 }).start();
             } else {
-                for(let i=0; i<150; i++) particles.push(new Particle());
+                for(let i=0; i<180; i++) particles.push(new Particle());
                 render();
             }
         }
 
         class Particle {
-            constructor() { this.reset(); this.size = Math.random() * 10 + 12; }
+            constructor() { this.reset(); this.size = Math.random() * 8 + 14; }
             reset() {
                 this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
                 this.bx = this.x; this.by = this.y; this.vx = 0; this.vy = 0;
-                this.chars = ["2","0","2","6","∞","✨"];
-                this.char = this.chars[Math.floor(Math.random()*6)];
+                this.history = ["2021", "2023", "2024", "2025", "PF", "∞"];
+                this.char = this.history[Math.floor(Math.random()*this.history.length)];
             }
             update() {
+                let targetX = this.bx, targetY = this.by;
+
+                // --- LOGIKA SKLÁDÁNÍ (Fist Mode) ---
+                if (isFist && handX > -500) {
+                    targetX = canvas.width/2 + (Math.random()-0.5)*200;
+                    targetY = canvas.height/2 + (Math.random()-0.5)*100;
+                    this.char = "2026";
+                } else {
+                    if(Math.random() > 0.98) this.char = this.history[Math.floor(Math.random()*this.history.length)];
+                }
+
                 let dx = handX - this.x, dy = handY - this.y;
                 let d = Math.hypot(dx, dy);
-                if (d < 250 && handX > -500) {
+                if (d < 250 && handX > -500 && !isFist) {
                     let f = (250 - d) / 250;
-                    if (isFist) { this.vx += (dx/d)*f*20; this.vy += (dy/d)*f*20; }
-                    else { this.vx -= (dx/d)*f*15; this.vy -= (dy/d)*f*15; }
+                    this.vx -= (dx/d)*f*12; this.vy -= (dy/d)*f*12;
                 }
-                this.vx += (this.bx - this.x) * 0.04; this.vy += (this.by - this.y) * 0.04;
-                this.vx *= 0.85; this.vy *= 0.85;
+
+                this.vx += (targetX - this.x) * 0.03; this.vy += (targetY - this.y) * 0.03;
+                this.vx *= 0.88; this.vy *= 0.88;
                 this.x += this.vx; this.y += this.vy;
+                
                 this.bx += gravityX * 4; this.by += gravityY * 4;
-                if (this.by > canvas.height) this.by = 0; if (this.bx > canvas.width) this.bx = 0;
+                if (this.by > canvas.height) this.by = 0; else if (this.by < 0) this.by = canvas.height;
+                if (this.bx > canvas.width) this.bx = 0; else if (this.bx < 0) this.bx = canvas.width;
             }
             draw() {
-                ctx.fillStyle = isFist ? "#ff00ff" : "#00ffcc";
-                ctx.font = `${this.size}px JetBrains Mono`;
+                ctx.fillStyle = isFist ? "#fff" : "#00ffcc";
+                if(isFist) ctx.shadowBlur = 10; ctx.shadowColor = "#00ffcc";
+                ctx.font = `${isFist ? this.size*1.2 : this.size}px JetBrains Mono`;
                 ctx.fillText(this.char, this.x, this.y);
+                ctx.shadowBlur = 0;
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             if(audioCtx && handX > -500) {
-                oscillator.frequency.setTargetAtTime(200 + (1-handY/canvas.height)*600, audioCtx.currentTime, 0.1);
-                gainNode.gain.setTargetAtTime(isFist ? 0.2 : 0.05, audioCtx.currentTime, 0.1);
+                let targetFreq = 160 + (1 - handY / canvas.height) * 400; 
+                oscillator.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.2);
+                let targetGain = isFist ? 0.12 : 0.04;
+                gainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.2);
+                let filterFreq = 400 + (gravityX + 1) * 800;
+                biquadFilter.frequency.setTargetAtTime(filterFreq, audioCtx.currentTime, 0.1);
+            } else if (gainNode) {
+                gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.4);
             }
+
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
