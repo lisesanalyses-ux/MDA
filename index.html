@@ -127,6 +127,8 @@
 
     <script>
         let peer, conn;
+        let lastSend = 0;
+        const throttleMS = 30; // Omezit odesílání na cca 33 FPS
         
         function initDisplayMode() {
             peer = new Peer();
@@ -137,6 +139,7 @@
             peer.on('connection', (c) => {
                 conn = c;
                 conn.on('data', (data) => {
+                    // Tady Screen přijímá data x a y
                     console.log("Remote Input:", data);
                     triggerFlash();
                 });
@@ -159,7 +162,17 @@
                 conn.on('open', () => {
                     alert("SYNCHRONIZOVÁNO. Nakláněj telefon!");
                     window.addEventListener('deviceorientation', (e) => {
-                        conn.send({ x: e.gamma, y: e.beta });
+                        const now = Date.now();
+                        // Kontrola throttlingu: odeslat jen pokud uplynulo více než 30ms
+                        if (now - lastSend > throttleMS) {
+                            if (conn && conn.open) {
+                                conn.send({ 
+                                    x: parseFloat(e.gamma.toFixed(2)), 
+                                    y: parseFloat(e.beta.toFixed(2)) 
+                                });
+                                lastSend = now;
+                            }
+                        }
                     });
                 });
             });
@@ -167,8 +180,10 @@
 
         function triggerFlash() {
             const t = document.getElementById('main-title');
-            t.classList.add('flash');
-            setTimeout(() => t.classList.remove('flash'), 500);
+            if(t) {
+                t.classList.add('flash');
+                setTimeout(() => t.classList.remove('flash'), 500);
+            }
         }
 
         window.toggleMenu = () => document.getElementById('side-menu').classList.toggle('open');
@@ -199,8 +214,16 @@
             render();
             setInterval(() => {
                 const slots = ['n1', 'n2', 'n3', 'n4'];
-                slots.forEach(id => document.getElementById(id).innerText = Math.floor(Math.random()*10));
+                slots.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.innerText = Math.floor(Math.random()*10);
+                });
             }, 120);
+        };
+
+        window.onresize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         };
     </script>
 </body>
