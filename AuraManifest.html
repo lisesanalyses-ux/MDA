@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>AuraAdmin | Cyberpunk Resonance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background: #000000; 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'JetBrains Mono', monospace;
+            color: #00f2ff;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 3px, 3px 100%;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        #intro-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            transition: opacity 1s ease-out;
+        }
+
+        #glitch-text, #live-overlay {
+            font-size: 2.5vw;
+            text-align: center;
+            line-height: 1.6;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.7);
+            font-weight: 800;
+            padding: 40px;
+        }
+
+        #live-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15;
+            width: 80%;
+            pointer-events: none;
+            display: none;
+            opacity: 0.3; /* Jemnější podkres v interaktivním módu */
+        }
+
+        .char-glitch {
+            display: inline-block;
+            animation: hyper-glitch 0.1s infinite alternate;
+            color: #ffffff;
+        }
+
+        @keyframes hyper-glitch {
+            0% { transform: skew(15deg); opacity: 1; filter: hue-rotate(90deg); }
+            50% { transform: skew(-25deg); opacity: 0.5; color: #00f2ff; }
+            100% { transform: translate(3px, -3px); opacity: 1; filter: contrast(300%); }
+        }
+
+        #start-btn {
+            margin-top: 50px;
+            color: #00f2ff;
+            background: rgba(0, 20, 30, 0.5);
+            padding: 15px 40px;
+            border: 2px solid #00f2ff;
+            cursor: pointer;
+            letter-spacing: 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0,242,255,0.3);
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #start-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(0,242,255,0.3); }
+            50% { box-shadow: 0 0 30px rgba(0,242,255,0.8); }
+        }
+
+        #start-btn:hover { background: #00f2ff; color: #000; }
+
+        canvas { 
+            position: absolute; top: 0; left: 0; 
+            width: 100vw; height: 100vh;
+            z-index: 10; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+
+    <div id="intro-screen">
+        <div id="glitch-text"></div>
+        <div id="start-btn" onclick="startDigitalStage()">[ ENTER THE AURA ]</div>
+    </div>
+
+    <div id="live-overlay"></div>
+
+    <canvas id="stage-canvas"></canvas>
+    <video id="input-video" style="display:none;"></video>
+
+    <script>
+        const glitchTextElement = document.getElementById('glitch-text');
+        const liveOverlay = document.getElementById('live-overlay');
+        const startButton = document.getElementById('start-btn');
+        const introScreen = document.getElementById('intro-screen');
+        const stageCanvas = document.getElementById('stage-canvas');
+        
+        const manifestText = `EVERYONE SHOULD ASK: <br> IN WHAT SOCIETY DO WE WANT TO LIVE? <br> REALITY IS FORMED BY OUR DAILY DEEDS <br> AND THE VIBRATION WE SHARE.`;
+
+        let charIndex = 0;
+        let isFirstLoad = true;
+        let isRunning = false;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playTypeSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(Math.random() * 150 + 40, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.04);
+        }
+
+        function typeEffect() {
+            let targetElement = isRunning ? liveOverlay : glitchTextElement;
+            
+            if (charIndex < manifestText.length) {
+                initAudio();
+                if (audioCtx && !isRunning) playTypeSound();
+
+                let char = manifestText.charAt(charIndex);
+                if (char === '<') {
+                    let endIndex = manifestText.indexOf('>', charIndex);
+                    targetElement.innerHTML += manifestText.substring(charIndex, endIndex + 1);
+                    charIndex = endIndex + 1;
+                } else {
+                    if (Math.random() > 0.9) {
+                        targetElement.innerHTML += `<span class="char-glitch">${char}</span>`;
+                    } else {
+                        targetElement.innerHTML += char;
+                    }
+                    charIndex++;
+                }
+                
+                let speed = Math.random() > 0.96 ? 200 : 40;
+                setTimeout(typeEffect, speed);
+            } else {
+                if (isFirstLoad) {
+                    startButton.classList.add('visible');
+                    isFirstLoad = false;
+                }
+                setTimeout(restartManifest, 10000);
+            }
+        }
+
+        function restartManifest() {
+            let targetElement = isRunning ? liveOverlay : glitchTextElement;
+            targetElement.style.opacity = "0";
+            setTimeout(() => {
+                targetElement.innerHTML = "";
+                charIndex = 0;
+                targetElement.style.opacity = isRunning ? "0.3" : "1";
+                typeEffect();
+            }, 1000);
+        }
+
+        // --- CORE LOGIC (PARTICLES & AUDIO) ---
+        const ctx = stageCanvas.getContext('2d');
+        const videoElement = document.getElementById('input-video');
+        let particles = [], handX = -1000, handY = -1000;
+        let micVolume = 0, analyser, dataArray;
+
+        async function initMic() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const loop = () => {
+                    analyser.getByteFrequencyData(dataArray);
+                    micVolume = dataArray.reduce((a,b)=>a+b)/dataArray.length;
+                    requestAnimationFrame(loop);
+                };
+                loop();
+            } catch(e) { console.log("Mic blocked"); }
+        }
+
+        class Particle {
+            constructor(layer) {
+                this.layer = layer;
+                this.x = Math.random() * stageCanvas.width;
+                this.y = Math.random() * stageCanvas.height;
+                this.bx = this.x; this.by = this.y;
+                this.vx = 0; this.vy = 0;
+                this.baseSize = [12, 18, 30][layer];
+                this.char = this.getChar();
+                this.state = "mutating";
+                this.glowIntensity = 0;
+                this.f = 0.92;
+            }
+            getChar() { return "01ΣΔΦΨΩαβγδεζηθλμξπρστυφχψω$#!?@%&*"[Math.floor(Math.random() * 40)]; }
+            
+            update() {
+                if (this.state === "mutating") {
+                    if (Math.random() > 0.99) this.char = this.getChar();
+                    if (Math.random() > 0.995) this.state = "decided";
+                } else if (this.state === "decided") {
+                    this.glowIntensity += 0.04;
+                    if (this.glowIntensity >= 1) this.state = "glowing";
+                } else {
+                    this.glowIntensity -= 0.015;
+                    if (this.glowIntensity <= 0) this.state = "mutating";
+                }
+
+                // Audio Jitter (vibrace)
+                let jitter = micVolume > 20 ? (micVolume / 12) : 0;
+                
+                let dx = handX - this.x, dy = handY - this.y;
+                let d = Math.hypot(dx, dy);
+                let lim = [150, 250, 450][this.layer];
+
+                if (d < lim) {
+                    let force = (lim - d) / lim;
+                    let ang = Math.atan2(dy, dx);
+                    this.vx -= Math.cos(ang) * force * (35 + jitter);
+                    this.vy -= Math.sin(ang) * force * (35 + jitter);
+                }
+
+                let s = [0.01, 0.03, 0.06][this.layer];
+                this.vx += (this.bx - this.x) * s + (Math.random() - 0.5) * jitter;
+                this.vy += (this.by - this.y) * s + (Math.random() - 0.5) * jitter;
+                
+                this.vx *= this.f; this.vy *= this.f;
+                this.x += this.vx; this.y += this.vy;
+                this.by += 0.25; 
+                if (this.by > stageCanvas.height) this.by = -20;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                let volSense = Math.min(micVolume / 80, 1); 
+                
+                // Color Transition: Cyan -> Red based on volume
+                let r = Math.floor(volSense * 255);
+                let g = Math.floor(242 * (1 - volSense));
+                let b = Math.floor(255 * (1 - volSense) + (volSense * 70));
+                
+                let totalGlow = (this.glowIntensity * 30) + (micVolume * 1.5);
+                ctx.shadowBlur = totalGlow;
+                ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
+                
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.4 + this.glowIntensity + (volSense * 0.5)})`;
+                
+                let sizeBoost = volSense * 20;
+                ctx.font = `${this.baseSize + (this.glowIntensity * 5) + sizeBoost}px 'JetBrains Mono'`;
+                
+                ctx.fillText(this.char, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, stageCanvas.width, stageCanvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(render);
+        }
+
+        const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1 });
+        hands.onResults(res => {
+            if(res.multiHandLandmarks?.[0]) {
+                const t = res.multiHandLandmarks[0][8];
+                handX = (1-t.x)*stageCanvas.width; handY = t.y*stageCanvas.height;
+            } else { handX = -1000; }
+        });
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await hands.send({image: videoElement}); },
+            width: 1280, height: 720
+        });
+
+        function startDigitalStage() {
+            if(isRunning) return;
+            isRunning = true;
+            initAudio();
+            
+            // Re-trigger text for live overlay
+            charIndex = 0;
+            liveOverlay.innerHTML = "";
+            liveOverlay.style.display = "block";
+            typeEffect();
+
+            // Impact Sound
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 1.5);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+
+            introScreen.style.opacity = 0;
+            setTimeout(() => {
+                introScreen.style.display = 'none';
+                stageCanvas.style.display = 'block';
+            }, 1000);
+
+            stageCanvas.width = window.innerWidth;
+            stageCanvas.height = window.innerHeight;
+            for(let l=0; l<3; l++) {
+                for(let i=0; i<45; i++) particles.push(new Particle(l));
+            }
+            initMic();
+            camera.start();
+            render();
+        }
+
+        window.onload = typeEffect;
+    </script>
+</body>
+</html>

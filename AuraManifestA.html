@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>AuraAdmin | The Undefined Reality</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00f2ff; touch-action: none; }
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 3px, 3px 100%; z-index: 30; pointer-events: none;
+        }
+        #intro-screen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 40; transition: opacity 1s ease-out;
+        }
+        #glitch-text, #live-overlay {
+            font-size: 2vw; text-align: center; line-height: 1.6; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.7); font-weight: 800; padding: 40px;
+        }
+        #live-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; width: 80%; pointer-events: none; display: none; opacity: 0.3; }
+        #start-btn {
+            margin-top: 50px; color: #00f2ff; background: rgba(0, 20, 30, 0.5); padding: 15px 40px;
+            border: 2px solid #00f2ff; cursor: pointer; letter-spacing: 5px; font-weight: bold;
+            text-transform: uppercase; box-shadow: 0 0 15px rgba(0,242,255,0.3); transition: all 0.3s ease;
+            opacity: 0; pointer-events: none;
+        }
+        #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 15px rgba(0,242,255,0.3); } 50% { box-shadow: 0 0 30px rgba(0,242,255,0.8); } }
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
+        #video-helper { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+
+    <div id="intro-screen">
+        <div id="glitch-text"></div>
+        <div id="start-btn" onclick="startDigitalStage()">[ SYNC WITH AURA ]</div>
+    </div>
+
+    <div id="live-overlay"></div>
+    <canvas id="stage-canvas"></canvas>
+    <canvas id="video-helper"></canvas> 
+    <video id="input-video" playsinline style="display:none;"></video>
+
+    <script>
+        const glitchTextElement = document.getElementById('glitch-text');
+        const liveOverlay = document.getElementById('live-overlay');
+        const startButton = document.getElementById('start-btn');
+        const introScreen = document.getElementById('intro-screen');
+        const stageCanvas = document.getElementById('stage-canvas');
+        const videoHelper = document.getElementById('video-helper');
+        const vhCtx = videoHelper.getContext('2d', {willReadFrequently: true});
+        const ctx = stageCanvas.getContext('2d');
+        const videoElement = document.getElementById('input-video');
+
+        const manifestText = `EVERYONE SHOULD ASK: <br> IN WHAT SOCIETY DO WE WANT TO LIVE? <br> REALITY IS FORMED BY OUR DAILY DEEDS <br> AND THE VIBRATION WE SHARE.`;
+
+        let charIndex = 0, isFirstLoad = true, isRunning = false, audioCtx;
+        let particles = [], handX = -1000, handY = -1000, isFist = false;
+        let micVolume = 0, avgNoise = 0, shockwaveRadius = 0, shockwaveActive = false, shockX = 0, shockY = 0;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        
+        async function initMic() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioCtx.createMediaStreamSource(stream);
+                const analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const loop = () => {
+                    analyser.getByteFrequencyData(dataArray);
+                    let currentSum = dataArray.reduce((a,b)=>a+b)/dataArray.length;
+                    avgNoise = avgNoise * 0.98 + currentSum * 0.02;
+                    micVolume = currentSum > avgNoise + 5 ? (currentSum - avgNoise) : 0;
+                    if (micVolume > 45 && !shockwaveActive && handX !== -1000) {
+                        shockwaveActive = true; shockX = handX; shockY = handY; shockwaveRadius = 0;
+                    }
+                    requestAnimationFrame(loop);
+                };
+                loop();
+            } catch(e) { console.log("Mic blocked"); }
+        }
+
+        function checkFist(landmarks) {
+            const points = [8, 12, 16, 20];
+            const wrist = landmarks[0];
+            let distSum = 0;
+            points.forEach(p => { distSum += Math.hypot(landmarks[p].x - wrist.x, landmarks[p].y - wrist.y); });
+            return distSum < 0.6;
+        }
+
+        function drawDigitalMirror() {
+            if (videoElement.readyState < 2) return;
+            vhCtx.drawImage(videoElement, 0, 0, 80, 60);
+            const imgData = vhCtx.getImageData(0, 0, 80, 60).data;
+            ctx.fillStyle = "rgba(0, 40, 60, 0.3)";
+            ctx.font = "8px 'JetBrains Mono'";
+            for (let y = 0; y < 60; y++) {
+                for (let x = 0; x < 80; x++) {
+                    const i = (y * 80 + x) * 4;
+                    const brightness = (imgData[i] + imgData[i+1] + imgData[i+2]) / 3;
+                    if (brightness > 70) {
+                        ctx.fillText(brightness > 130 ? "X" : ":", (1 - x/80) * stageCanvas.width, (y/60) * stageCanvas.height);
+                    }
+                }
+            }
+        }
+
+        class Particle {
+            constructor(layer) {
+                this.layer = layer;
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.bx = this.x; this.by = this.y;
+                this.vx = 0; this.vy = 0;
+                this.baseSize = [8, 14, 22][layer];
+                this.pool = ["0", "1", "Σ", "Δ", "Φ", "Ψ", "Ω", "$", "#", "!", "?", "@", "undefined"];
+                this.char = this.pool[Math.floor(Math.random() * this.pool.length)];
+                this.overloaded = 0;
+            }
+
+            update() {
+                // Dynamická změna znaku (nestabilita před rozhodnutím)
+                if (Math.random() > 0.98 && this.overloaded <= 0) {
+                    this.char = this.pool[Math.floor(Math.random() * this.pool.length)];
+                }
+
+                let dx = handX - this.x, dy = handY - this.y;
+                let d = Math.hypot(dx, dy);
+                let lim = [100, 200, 350][this.layer];
+
+                if (handX !== -1000) {
+                    if (isFist) {
+                        let force = (lim * 2 - d) / (lim * 2);
+                        if (d > 10) {
+                            this.vx += (dx / d) * force * 12;
+                            this.vy += (dy / d) * force * 12;
+                            this.char = Math.random() > 0.5 ? "1" : "0"; // Pěst dává řád (binární)
+                        }
+                    } else if (d < lim) {
+                        let force = (lim - d) / lim;
+                        let ang = Math.atan2(dy, dx);
+                        this.vx -= Math.cos(ang) * force * 20;
+                        this.vy -= Math.sin(ang) * force * 20;
+                    }
+                }
+
+                if (shockwaveActive) {
+                    let sdx = shockX - this.x, sdy = shockY - this.y;
+                    let sd = Math.hypot(sdx, sdy);
+                    if (Math.abs(sd - shockwaveRadius) < 50) {
+                        this.vx -= (sdx / sd) * 60;
+                        this.vy -= (sdy / sd) * 60;
+                        this.overloaded = 1.0;
+                        this.char = "undefined"; // Rázová vlna resetuje realitu
+                    }
+                }
+
+                if (this.overloaded > 0) {
+                    this.overloaded -= 0.01;
+                }
+
+                let s = [0.01, 0.03, 0.05][this.layer];
+                this.vx += (this.bx - this.x) * s;
+                this.vy += (this.by - this.y) * s;
+                this.vx *= 0.92; this.vy *= 0.92;
+                this.x += this.vx; this.y += this.vy;
+                this.by += 0.4; if (this.by > stageCanvas.height) this.by = -20;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                let isUndefined = this.char === "undefined";
+                ctx.shadowBlur = (isUndefined ? 15 : 5) + (this.overloaded * 20);
+                ctx.shadowColor = isUndefined ? "#ff0055" : "#00f2ff";
+                ctx.fillStyle = isUndefined ? `rgba(255, 0, 85, ${0.6 + this.overloaded})` : `rgba(0, 242, 255, ${0.4 + this.overloaded})`;
+                ctx.font = `${isUndefined ? this.baseSize * 0.7 : this.baseSize}px 'JetBrains Mono'`;
+                ctx.fillText(this.char, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillRect(0, 0, stageCanvas.width, stageCanvas.height);
+            drawDigitalMirror();
+            if (shockwaveActive) {
+                shockwaveRadius += 25;
+                if (shockwaveRadius > stageCanvas.width * 1.5) shockwaveActive = false;
+            }
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(render);
+        }
+
+        function typeEffect() {
+            let target = isRunning ? liveOverlay : glitchTextElement;
+            if (charIndex < manifestText.length) {
+                let char = manifestText.charAt(charIndex);
+                if (char === '<') {
+                    let end = manifestText.indexOf('>', charIndex);
+                    target.innerHTML += manifestText.substring(charIndex, end + 1);
+                    charIndex = end + 1;
+                } else {
+                    target.innerHTML += char; charIndex++;
+                }
+                setTimeout(typeEffect, 45);
+            } else if (isFirstLoad) {
+                startButton.classList.add('visible');
+                isFirstLoad = false;
+            }
+        }
+
+        function startDigitalStage() {
+            if(isRunning) return;
+            isRunning = true; initAudio(); initMic();
+            introScreen.style.opacity = 0;
+            setTimeout(() => {
+                introScreen.style.display = 'none';
+                stageCanvas.style.display = 'block';
+                liveOverlay.style.display = "block";
+            }, 1000);
+            stageCanvas.width = window.innerWidth; stageCanvas.height = window.innerHeight;
+            for(let l=0; l<3; l++) {
+                for(let i=0; i<(isMobile?25:45); i++) particles.push(new Particle(l));
+            }
+            const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5 });
+            hands.onResults(res => {
+                if(res.multiHandLandmarks?.[0]) {
+                    const lms = res.multiHandLandmarks[0];
+                    handX = (1 - lms[8].x) * stageCanvas.width;
+                    handY = lms[8].y * stageCanvas.height;
+                    isFist = checkFist(lms);
+                } else { handX = -1000; }
+            });
+            const camera = new Camera(videoElement, {
+                onFrame: async () => { await hands.send({image: videoElement}); },
+                width: 640, height: 480
+            });
+            camera.start();
+            render();
+        }
+
+        window.onload = typeEffect;
+        window.onresize = () => { stageCanvas.width = window.innerWidth; stageCanvas.height = window.innerHeight; };
+    </script>
+</body>
+</html>
