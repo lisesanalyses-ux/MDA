@@ -2,10 +2,9 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | AuraManifest Sync v10</title>
+    <title>PF 2026 | AuraManifest Sync v11</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <style>
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
@@ -28,11 +27,17 @@
             border: 2px solid #00ffcc; border-radius: 15px; backdrop-filter: blur(10px);
         }
 
-        /* DYNAMICKÉ ČÍSELNÍKY VLEVO */
+        .menu-item {
+            display: block; padding: 20px; margin-bottom: 10px; border: 1px solid rgba(0, 255, 204, 0.3);
+            color: #00ffcc; text-decoration: none; font-size: 13px; text-transform: uppercase; cursor: pointer;
+        }
+        .menu-item:hover { background: #00ffcc; color: #000; }
+
+        /* ČÍSELNÍK VLEVO */
         #number-stream {
-            position: absolute; left: 10%; top: 50%; transform: translateY(-50%);
-            z-index: 10; font-size: 4rem; font-weight: 800; color: rgba(0, 255, 204, 0.2);
-            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+            position: absolute; left: 5%; top: 50%; transform: translateY(-50%);
+            z-index: 10; font-size: 5rem; font-weight: 800; color: rgba(0, 255, 204, 0.15);
+            display: flex; flex-direction: column; line-height: 1; pointer-events: none;
         }
 
         /* UI LAYER */
@@ -43,22 +48,20 @@
         }
         #ui-layer * { pointer-events: auto; }
 
-        #manifest-text { font-size: 1.2rem; line-height: 1.6; max-width: 700px; margin-bottom: 40px; text-shadow: 0 0 15px #000; color: #00ffcc; text-align: center; }
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 320px; letter-spacing: 2px; }
+        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 320px; text-align: center; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px #00ffcc; }
         
-        /* ODKAZY S 10% ROZESTUPEM MEZI SEBOU */
+        /* KONTAKTY - 10% ROZESTUP OD STŘEDU */
         .promo-bubble { 
             position: fixed; bottom: 8%; z-index: 1500; 
             background: rgba(0, 20, 20, 0.95); border: 2px solid #00ffcc; 
-            padding: 12px 25px; border-radius: 50px; font-size: 11px; 
-            color: #00ffcc !important; text-decoration: none; backdrop-filter: blur(15px);
+            padding: 12px 25px; border-radius: 50px; font-size: 11px; color: #00ffcc !important;
         }
-        #link-web { left: calc(45% - 160px); transform: translateX(-100%); }
-        #link-mail { right: calc(45% - 160px); transform: translateX(100%); }
+        #link-web { left: 30%; transform: translateX(-50%); }
+        #link-mail { right: 30%; transform: translateX(50%); }
 
-        .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; text-shadow: 0 0 10px #00ffcc; }
-        .flash { color: #ff00ff !important; text-shadow: 0 0 30px #ff00ff !important; transform: scale(1.1); }
+        .glitch-2026 { transition: 0.2s; color: #fff; font-weight: 900; font-style: italic; }
+        .flash { color: #ff00ff !important; text-shadow: 0 0 30px #ff00ff !important; }
     </style>
 </head>
 <body>
@@ -66,9 +69,10 @@
     <div class="menu-trigger" onclick="toggleMenu()">☰</div>
     
     <nav id="side-menu">
-        <h3 class="text-xs opacity-50 mb-10 tracking-[6px] text-cyan-400">INDEX</h3>
-        <a href="#" class="menu-item block p-4 border border-cyan-900 mb-2 hover:bg-cyan-400 hover:text-black" onclick="location.reload()">00. RESET</a>
-        <a href="AMM.html" class="menu-item block p-4 border border-cyan-900 mb-2 hover:bg-cyan-400 hover:text-black">02. OPEN AMM</a>
+        <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
+        <div class="menu-item" onclick="location.reload()">00. RESET STAGE</div>
+        <div class="menu-item" onclick="window.location.href='AMM.html'">02. OPEN AMM</div>
+        <div class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/', '_blank')">01. MDA REPOSITORY</div>
     </nav>
 
     <div id="number-stream">
@@ -77,54 +81,55 @@
 
     <div id="ui-layer">
         <h1 id="main-title" class="text-8xl mb-8 glitch-2026">PF 2026</h1>
-        <div id="manifest-text">EVERYONE SHOULD ASK: IN WHAT SOCIETY DO WE WANT TO LIVE? REALITY IS FORMED BY OUR DAILY DEEDS.</div>
+        <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-xs">AuraManifest Synchronization Engine</p>
+        
         <div class="flex flex-col items-center">
-            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ ]</button>
-            <input type="text" id="remote-id-input" placeholder="ZADEJ ID" class="bg-black border-2 border-cyan-500 text-center p-4 my-4 w-[320px] text-white">
-            <button class="btn" onclick="requestPermissions()">[ 2. SYNC TELEFON ]</button>
+            <button class="btn" onclick="window.location.href='AMM.html'">[ SPUSTIT AMM STAGE ]</button>
+            <div class="h-px w-48 bg-cyan-900 my-6"></div>
+            <input type="text" id="remote-id-input" placeholder="INSERT ID" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[320px] text-white outline-none">
+            <button class="btn" onclick="alert('Sync Initialized')">[ SYNC NOKIA G42 ]</button>
         </div>
     </div>
 
     <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">WEB: auraadmin.online</a>
-    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">KONTAKT</a>
+    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">KONTAKT: lisesanalyses@gmail.com</a>
 
     <canvas id="stage-canvas"></canvas>
 
     <script>
-        // GLOBÁLNÍ FUNKCE MENU
         window.toggleMenu = function() {
             document.getElementById('side-menu').classList.toggle('open');
         };
 
-        // ČÍSELNÁ PROMENA
+        // Číselná animace 2026
         const slots = ['n1', 'n2', 'n3', 'n4'];
         function updateNumbers() {
-            let current = "";
+            let res = "";
             slots.forEach(id => {
-                const val = Math.floor(Math.random() * 10);
-                document.getElementById(id).innerText = val;
-                current += val;
+                const n = Math.floor(Math.random() * 10);
+                document.getElementById(id).innerText = n;
+                res += n;
             });
-
-            if (current === "2026") {
-                const title = document.getElementById('main-title');
-                title.classList.add('flash');
-                setTimeout(() => title.classList.remove('flash'), 1000);
+            if(res === "2026") {
+                const t = document.getElementById('main-title');
+                t.classList.add('flash');
+                setTimeout(() => t.classList.remove('flash'), 1000);
             }
         }
-        setInterval(updateNumbers, 150);
+        setInterval(updateNumbers, 120);
 
-        // POZADÍ ENGINE
+        // Matrix Background
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         let drops = [];
 
         class Drop {
             constructor() { this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 3 + 2; }
-            update() { this.y += this.speed; if (this.y > canvas.height) this.reset(); }
+            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 4 + 2; }
+            update() { this.y += this.speed; if(this.y > canvas.height) this.reset(); }
             draw() {
-                ctx.fillStyle = "rgba(0, 255, 204, 0.15)";
+                ctx.fillStyle = "rgba(0, 255, 204, 0.1)";
+                ctx.font = "14px monospace";
                 ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
             }
         }
@@ -138,12 +143,9 @@
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<100; i++) drops.push(new Drop());
+            for(let i=0; i<80; i++) drops.push(new Drop());
             render();
         };
-
-        function initDisplayMode() { alert("Stage Ready"); }
-        function requestPermissions() { alert("Sync Ready"); }
     </script>
 </body>
 </html>
