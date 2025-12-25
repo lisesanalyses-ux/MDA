@@ -46,7 +46,6 @@
         let handX = -1000, handY = -1000, isFist = false;
         let gravityX = 0, gravityY = 0.1;
         
-        // --- AETHEREON AUDIO ENGINE ---
         let audioCtx, oscillator, gainNode, biquadFilter;
 
         async function requestPermissions() {
@@ -64,15 +63,12 @@
             oscillator = audioCtx.createOscillator();
             gainNode = audioCtx.createGain();
             biquadFilter = audioCtx.createBiquadFilter();
-
             oscillator.type = 'sine';
             biquadFilter.type = "lowpass";
             biquadFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
-
             oscillator.connect(biquadFilter);
             biquadFilter.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
             gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
             oscillator.start();
         }
@@ -129,12 +125,17 @@
                     } else { handX = -1000; }
                     if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
                 });
-                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 }).start();
+
+                const camera = new Camera(videoElement, {
+                    onFrame: async () => { await hands.send({image: videoElement}); },
+                    width: 320, height: 240
+                });
+                camera.start().catch(err => alert("Kamera nelze spustit: " + err));
             } else {
                 for(let i=0; i<180; i++) particles.push(new Particle());
                 render();
             }
-        }
+        } // <--- TADY CHYBĚLA TATO ZÁVORKA
 
         class Particle {
             constructor() { this.reset(); this.size = Math.random() * 8 + 14; }
@@ -146,8 +147,6 @@
             }
             update() {
                 let targetX = this.bx, targetY = this.by;
-
-                // --- LOGIKA SKLÁDÁNÍ (Fist Mode) ---
                 if (isFist && handX > -500) {
                     targetX = canvas.width/2 + (Math.random()-0.5)*200;
                     targetY = canvas.height/2 + (Math.random()-0.5)*100;
@@ -155,18 +154,15 @@
                 } else {
                     if(Math.random() > 0.98) this.char = this.history[Math.floor(Math.random()*this.history.length)];
                 }
-
                 let dx = handX - this.x, dy = handY - this.y;
                 let d = Math.hypot(dx, dy);
                 if (d < 250 && handX > -500 && !isFist) {
                     let f = (250 - d) / 250;
                     this.vx -= (dx/d)*f*12; this.vy -= (dy/d)*f*12;
                 }
-
                 this.vx += (targetX - this.x) * 0.03; this.vy += (targetY - this.y) * 0.03;
                 this.vx *= 0.88; this.vy *= 0.88;
                 this.x += this.vx; this.y += this.vy;
-                
                 this.bx += gravityX * 4; this.by += gravityY * 4;
                 if (this.by > canvas.height) this.by = 0; else if (this.by < 0) this.by = canvas.height;
                 if (this.bx > canvas.width) this.bx = 0; else if (this.bx < 0) this.bx = canvas.width;
@@ -183,7 +179,6 @@
         function render() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
             if(audioCtx && handX > -500) {
                 let targetFreq = 160 + (1 - handY / canvas.height) * 400; 
                 oscillator.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.2);
@@ -194,7 +189,6 @@
             } else if (gainNode) {
                 gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.4);
             }
-
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
