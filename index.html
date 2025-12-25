@@ -35,26 +35,30 @@
         }
         .menu-item:hover { background: #00ffcc; color: #000; }
 
-        /* ČÍSELNÍK VLEVO */
+        /* UI LAYER */
+        #ui-layer { 
+            position: absolute; z-index: 50; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: radial-gradient(circle, rgba(5, 16, 16, 0.85) 0%, #000 100%);
+        }
+        
+        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 100%; text-align: center; font-size: 13px; letter-spacing: 2px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 30px #00ffcc; }
+        
+        .btn-magenta { border-color: #ff00ff; color: #ff00ff; }
+        .btn-magenta:hover { background: #ff00ff; color: #000; box-shadow: 0 0 30px #ff00ff; }
+
+        .control-box { background: rgba(0, 20, 20, 0.4); border: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; width: 380px; transition: 0.4s; }
+        .control-box:hover { border-color: rgba(0, 255, 204, 0.6); background: rgba(0, 30, 30, 0.6); }
+
+        #status-panel { display: none; margin-top: 15px; text-align: center; }
+        #display-id { font-size: 2.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; letter-spacing: 4px; }
+
         #number-stream {
             position: absolute; left: 5%; top: 50%; transform: translateY(-50%);
             z-index: 10; font-size: 5rem; font-weight: 800; color: rgba(0, 255, 204, 0.15);
             display: flex; flex-direction: column; line-height: 1; pointer-events: none;
         }
-
-        /* UI LAYER */
-        #ui-layer { 
-            position: absolute; z-index: 50; width: 100%; height: 100%; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: radial-gradient(circle, rgba(5, 16, 16, 0.8) 0%, #000 100%);
-        }
-        
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 340px; text-align: center; font-size: 14px; letter-spacing: 2px; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px #00ffcc; }
-        
-        /* STATUS PANEL PRO ID */
-        #status-panel { display: none; margin-top: 20px; padding: 20px; border: 2px dashed #00ffcc; background: rgba(0, 255, 204, 0.05); text-align: center; }
-        #display-id { font-size: 3rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; }
 
         .promo-bubble { 
             position: fixed; bottom: 8%; z-index: 1500; 
@@ -78,7 +82,6 @@
         <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
         <div class="menu-item" onclick="location.reload()">00. RESET STAGE</div>
         <div class="menu-item" onclick="window.location.href='AMM.html'">02. AMM PF 2026</div>
-        <div class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/', '_blank')">01. MDA REPOSITORY</div>
     </nav>
 
     <div id="number-stream">
@@ -86,22 +89,34 @@
     </div>
 
     <div id="ui-layer">
-        <h1 id="main-title" class="text-8xl mb-4 glitch-2026">PF 2026</h1>
-        <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-[10px] opacity-60">AuraManifest Synchronization Engine</p>
+        <h1 id="main-title" class="text-8xl mb-2 glitch-2026">PF 2026</h1>
+        <p class="text-cyan-400 mb-12 tracking-[4px] uppercase text-[10px] opacity-60 text-center">AuraManifest Synchronization Engine</p>
         
-        <div id="mode-selection" class="flex flex-col items-center">
-            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ ]</button>
+        <div id="mode-selection" class="flex flex-col gap-8">
             
-            <div id="status-panel">
-                <p class="text-[9px] uppercase opacity-50 mb-2">Stage Access Key:</p>
-                <span id="display-id">---</span>
-                <p class="animate-pulse text-emerald-400 text-[9px] mt-2">AWAITING CONTROLLER SIGNAL...</p>
+            <div class="control-box">
+                <p class="text-[9px] text-cyan-400 mb-4 tracking-widest uppercase border-b border-cyan-900 pb-2">Step 01 // Host Device Mode</p>
+                <button class="btn" onclick="initDisplayMode()">[ Open Your Screen Stage ]</button>
+                <div id="status-panel">
+                    <p class="text-[9px] uppercase opacity-50 mb-1">Access Key for Remote:</p>
+                    <span id="display-id">---</span>
+                    <p class="animate-pulse text-emerald-400 text-[8px] mt-2 tracking-widest">AWAITING CONTROL SIGNAL...</p>
+                </div>
             </div>
 
-            <div class="h-px w-48 bg-cyan-900 my-8"></div>
-            
-            <input type="text" id="remote-id-input" placeholder="ZADEJ ID OBRAZOVKY" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[340px] text-white outline-none focus:border-white transition-all">
-            <button class="btn" style="border-color: #ff00ff; color: #ff00ff;" onclick="initControllerMode()">[ 2. SYNC NOKIA / IPHONE ]</button>
+            <div class="flex items-center gap-4 justify-center opacity-20">
+                <div class="h-px w-20 bg-white"></div>
+                <span class="text-[8px] uppercase">Cross-Link Protocol</span>
+                <div class="h-px w-20 bg-white"></div>
+            </div>
+
+            <div class="control-box" style="border-color: rgba(255, 0, 255, 0.2);">
+                <p class="text-[9px] text-magenta-500 mb-4 tracking-widest uppercase border-b border-magenta-900 pb-2" style="color:#ff00ff">Step 02 // Remote Device Mode</p>
+                <input type="text" id="remote-id-input" placeholder="PASTE SCREEN ID HERE" class="bg-black border border-magenta-500/50 text-center p-3 mb-4 w-full text-white outline-none focus:border-magenta-500 transition-all text-sm">
+                <button class="btn btn-magenta" onclick="initControllerMode()">[ Sync Nokia / iPhone ]</button>
+                <p class="text-[8px] mt-3 opacity-40 italic text-center">Aktivuje gyroskop a pohybové senzory pro ovládání rukou.</p>
+            </div>
+
         </div>
     </div>
 
@@ -113,9 +128,6 @@
     <script>
         let peer, conn;
         
-        // --- SYNCHRONIZAČNÍ LOGIKA ---
-        
-        // Funkce pro zařízení, které slouží jako hlavní OBRAZOVKA (Display)
         function initDisplayMode() {
             peer = new Peer();
             peer.on('open', (id) => {
@@ -125,34 +137,29 @@
             peer.on('connection', (c) => {
                 conn = c;
                 conn.on('data', (data) => {
-                    // Zde se přijímají data z telefonu (např. gyroskop)
-                    console.log("Sync Data Received:", data);
+                    console.log("Remote Input:", data);
                     triggerFlash();
                 });
-                // Skryje UI po připojení
-                document.getElementById('ui-layer').style.background = 'transparent';
+                document.getElementById('ui-layer').classList.add('hidden');
             });
         }
 
-        // Funkce pro TELEFON (Controller)
         async function initControllerMode() {
             const remoteId = document.getElementById('remote-id-input').value;
-            if(!remoteId) return alert("Zadej ID z obrazovky!");
+            if(!remoteId) return alert("Zadej ID z monitoru!");
 
-            // Vyžádání povolení pro senzory (nutné pro iOS/Nokia)
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const res = await DeviceOrientationEvent.requestPermission();
-                if(res !== 'granted') return alert("Senzory zamítnuty.");
+                if(res !== 'granted') return alert("Povolte senzory pohybu.");
             }
 
             peer = new Peer();
             peer.on('open', () => {
                 conn = peer.connect(remoteId);
                 conn.on('open', () => {
-                    alert("PROPOJENO! Nakláněj telefon pro ovládání.");
-                    // Odesílání dat z gyroskopu
+                    alert("SYNCHRONIZOVÁNO. Nakláněj telefon!");
                     window.addEventListener('deviceorientation', (e) => {
-                        conn.send({ tiltX: e.gamma, tiltY: e.beta });
+                        conn.send({ x: e.gamma, y: e.beta });
                     });
                 });
             });
@@ -164,27 +171,12 @@
             setTimeout(() => t.classList.remove('flash'), 500);
         }
 
-        // --- PŮVODNÍ VIZUÁLNÍ LOGIKA ---
-        window.toggleMenu = function() {
-            document.getElementById('side-menu').classList.toggle('open');
-        };
+        window.toggleMenu = () => document.getElementById('side-menu').classList.toggle('open');
 
-        const slots = ['n1', 'n2', 'n3', 'n4'];
-        function updateNumbers() {
-            let res = "";
-            slots.forEach(id => {
-                const n = Math.floor(Math.random() * 10);
-                document.getElementById(id).innerText = n;
-                res += n;
-            });
-            if(res === "2026") triggerFlash();
-        }
-        setInterval(updateNumbers, 120);
-
+        // Matrix background logic
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         let drops = [];
-
         class Drop {
             constructor() { this.reset(); }
             reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 4 + 2; }
@@ -195,23 +187,20 @@
                 ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
             }
         }
-
         function render() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
         }
-
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<100; i++) drops.push(new Drop());
+            for(let i=0; i<80; i++) drops.push(new Drop());
             render();
-        };
-
-        window.onresize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            setInterval(() => {
+                const slots = ['n1', 'n2', 'n3', 'n4'];
+                slots.forEach(id => document.getElementById(id).innerText = Math.floor(Math.random()*10));
+            }, 120);
         };
     </script>
 </body>
