@@ -5,6 +5,7 @@
     <title>PF 2026 | AuraManifest Sync v13</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <style>
         body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
@@ -45,14 +46,16 @@
         #ui-layer { 
             position: absolute; z-index: 50; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: transparent; pointer-events: none;
+            background: radial-gradient(circle, rgba(5, 16, 16, 0.8) 0%, #000 100%);
         }
-        #ui-layer * { pointer-events: auto; }
-
-        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 340px; text-align: center; font-size: 14px; }
+        
+        .btn { border: 2px solid #00ffcc; padding: 16px 32px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: rgba(0,0,0,0.85); color: #00ffcc; width: 340px; text-align: center; font-size: 14px; letter-spacing: 2px; }
         .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px #00ffcc; }
         
-        /* KONTAKTY - ROZESTUP OD STŘEDU */
+        /* STATUS PANEL PRO ID */
+        #status-panel { display: none; margin-top: 20px; padding: 20px; border: 2px dashed #00ffcc; background: rgba(0, 255, 204, 0.05); text-align: center; }
+        #display-id { font-size: 3rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px #00ffcc; display: block; }
+
         .promo-bubble { 
             position: fixed; bottom: 8%; z-index: 1500; 
             background: rgba(0, 20, 20, 0.95); border: 2px solid #00ffcc; 
@@ -74,7 +77,7 @@
     <nav id="side-menu">
         <h3 class="text-xs opacity-50 mb-10 tracking-[6px]">SYSTEM INDEX</h3>
         <div class="menu-item" onclick="location.reload()">00. RESET STAGE</div>
-        <div class="menu-item" onclick="window.location.href='AuraManifest.html'">02. AuraAdmin | Cyberpunk Resonance</div>
+        <div class="menu-item" onclick="window.location.href='AMM.html'">02. AMM PF 2026</div>
         <div class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/', '_blank')">01. MDA REPOSITORY</div>
     </nav>
 
@@ -83,14 +86,22 @@
     </div>
 
     <div id="ui-layer">
-        <h1 id="main-title" class="text-8xl mb-8 glitch-2026">PF 2026</h1>
-        <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-xs">AuraManifest Synchronization Engine</p>
+        <h1 id="main-title" class="text-8xl mb-4 glitch-2026">PF 2026</h1>
+        <p class="text-cyan-400 mb-10 tracking-[4px] uppercase text-[10px] opacity-60">AuraManifest Synchronization Engine</p>
         
-        <div class="flex flex-col items-center">
-            <button class="btn" onclick="window.location.href='AuraManifest.html'">[ AuraAdmin | Cyberpunk Resonance ]</button>
-            <div class="h-px w-48 bg-cyan-900 my-6"></div>
-            <input type="text" id="remote-id-input" placeholder="INSERT ID" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[340px] text-white outline-none">
-            <button class="btn" onclick="alert('Sync Initialized')">[ SYNC NOKIA G42 ]</button>
+        <div id="mode-selection" class="flex flex-col items-center">
+            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ ]</button>
+            
+            <div id="status-panel">
+                <p class="text-[9px] uppercase opacity-50 mb-2">Stage Access Key:</p>
+                <span id="display-id">---</span>
+                <p class="animate-pulse text-emerald-400 text-[9px] mt-2">AWAITING CONTROLLER SIGNAL...</p>
+            </div>
+
+            <div class="h-px w-48 bg-cyan-900 my-8"></div>
+            
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID OBRAZOVKY" class="bg-black border-2 border-cyan-500 text-center p-4 mb-4 w-[340px] text-white outline-none focus:border-white transition-all">
+            <button class="btn" style="border-color: #ff00ff; color: #ff00ff;" onclick="initControllerMode()">[ 2. SYNC NOKIA / IPHONE ]</button>
         </div>
     </div>
 
@@ -100,6 +111,60 @@
     <canvas id="stage-canvas"></canvas>
 
     <script>
+        let peer, conn;
+        
+        // --- SYNCHRONIZAČNÍ LOGIKA ---
+        
+        // Funkce pro zařízení, které slouží jako hlavní OBRAZOVKA (Display)
+        function initDisplayMode() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                document.getElementById('status-panel').style.display = 'block';
+                document.getElementById('display-id').innerText = id;
+            });
+            peer.on('connection', (c) => {
+                conn = c;
+                conn.on('data', (data) => {
+                    // Zde se přijímají data z telefonu (např. gyroskop)
+                    console.log("Sync Data Received:", data);
+                    triggerFlash();
+                });
+                // Skryje UI po připojení
+                document.getElementById('ui-layer').style.background = 'transparent';
+            });
+        }
+
+        // Funkce pro TELEFON (Controller)
+        async function initControllerMode() {
+            const remoteId = document.getElementById('remote-id-input').value;
+            if(!remoteId) return alert("Zadej ID z obrazovky!");
+
+            // Vyžádání povolení pro senzory (nutné pro iOS/Nokia)
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                const res = await DeviceOrientationEvent.requestPermission();
+                if(res !== 'granted') return alert("Senzory zamítnuty.");
+            }
+
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(remoteId);
+                conn.on('open', () => {
+                    alert("PROPOJENO! Nakláněj telefon pro ovládání.");
+                    // Odesílání dat z gyroskopu
+                    window.addEventListener('deviceorientation', (e) => {
+                        conn.send({ tiltX: e.gamma, tiltY: e.beta });
+                    });
+                });
+            });
+        }
+
+        function triggerFlash() {
+            const t = document.getElementById('main-title');
+            t.classList.add('flash');
+            setTimeout(() => t.classList.remove('flash'), 500);
+        }
+
+        // --- PŮVODNÍ VIZUÁLNÍ LOGIKA ---
         window.toggleMenu = function() {
             document.getElementById('side-menu').classList.toggle('open');
         };
@@ -112,11 +177,7 @@
                 document.getElementById(id).innerText = n;
                 res += n;
             });
-            if(res === "2026") {
-                const t = document.getElementById('main-title');
-                t.classList.add('flash');
-                setTimeout(() => t.classList.remove('flash'), 1000);
-            }
+            if(res === "2026") triggerFlash();
         }
         setInterval(updateNumbers, 120);
 
@@ -129,14 +190,14 @@
             reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * -canvas.height; this.speed = Math.random() * 4 + 2; }
             update() { this.y += this.speed; if(this.y > canvas.height) this.reset(); }
             draw() {
-                ctx.fillStyle = "rgba(0, 255, 204, 0.1)";
+                ctx.fillStyle = "rgba(0, 255, 204, 0.15)";
                 ctx.font = "14px monospace";
                 ctx.fillText(Math.floor(Math.random()*10), this.x, this.y);
             }
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
@@ -144,7 +205,7 @@
 
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<80; i++) drops.push(new Drop());
+            for(let i=0; i<100; i++) drops.push(new Drop());
             render();
         };
 
