@@ -2,31 +2,35 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>PF 2026 | Sonic Edition</title>
+    <title>PF 2026 | Universal Sonic Aura</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; }
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; touch-action: none; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
-        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); }
-        .btn { border: 2px solid #00ffcc; padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s; letter-spacing: 3px; }
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px rgba(0, 255, 204, 0.6); }
+        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; text-align: center; padding: 20px; }
+        .btn { border: 2px solid #00ffcc; padding: 12px 24px; cursor: pointer; margin: 8px; text-transform: uppercase; font-weight: 800; transition: 0.3s; background: transparent; color: #00ffcc; width: 280px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
+        #remote-id-input { background: #111; border: 1px solid #00ffcc; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; width: 280px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #f00; }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
-        <h1 class="text-6xl mb-2 font-black italic">PF 2026</h1>
-        <p class="mb-12 text-sm tracking-widest opacity-60 uppercase italic">Sonic & Visual Synchronicity</p>
+        <h1 class="text-5xl mb-2 font-black italic">PF 2026</h1>
+        <p class="mb-8 text-xs tracking-widest opacity-50 uppercase">Universal Multisensory Sync</p>
         
         <div id="mode-selection" class="flex flex-col items-center">
-            <button class="btn" onclick="initDisplayMode()">[ OPEN SONIC STAGE ]</button>
-            <div class="h-px w-48 bg-emerald-900 my-8"></div>
-            <input type="text" id="remote-id-input" class="bg-black border border-cyan-500 text-center p-2 mb-4" placeholder="STAGE ID">
-            <button class="btn" onclick="initControllerMode()">[ SYNC NOKIA G42 ]</button>
+            <button class="btn" onclick="initDisplayMode()">[ 1. SPUSTIT DISPLEJ / TV ]</button>
+            <div class="h-px w-32 bg-gray-800 my-4"></div>
+            <input type="text" id="remote-id-input" placeholder="ZADEJ ID Z OBRAZOVKY">
+            <button id="ios-btn" class="btn" onclick="requestPermissions()">[ 2. SYNC NOKIA / IPHONE ]</button>
+            <p class="text-[10px] mt-4 opacity-40">TIP: iPhone uživatelé musí kliknout na tlačítko 2 pro aktivaci senzorů.</p>
         </div>
     </div>
 
@@ -41,49 +45,43 @@
         let peer, conn, isController = false;
         let particles = [];
         let handX = -1000, handY = -1000, isFist = false;
-        let gravityX = 0, gravityY = 0.15;
-        
-        // AUDIO PROMĚNNÉ
-        let audioCtx, oscillator, gainNode, filter;
+        let gravityX = 0, gravityY = 0.1;
+        let audioCtx, oscillator, gainNode;
+
+        // --- OPTIMALIZACE PRO IPHONE & AUDIO ---
+        async function requestPermissions() {
+            // Žádost o senzory pro iOS
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') initSensors();
+                } catch (e) { console.error(e); }
+            } else {
+                initSensors(); // Pro Android a ostatní
+            }
+            initControllerMode();
+        }
 
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             oscillator = audioCtx.createOscillator();
             gainNode = audioCtx.createGain();
-            filter = audioCtx.createBiquadFilter();
-
-            oscillator.type = 'sawtooth';
-            filter.type = 'lowpass';
-            
-            oscillator.connect(filter);
-            filter.connect(gainNode);
+            oscillator.type = 'sine'; // Jemnější zvuk pro PF
+            oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
             gainNode.gain.value = 0;
             oscillator.start();
         }
 
-        function updateAudio() {
-            if (!audioCtx) return;
-            if (handX > -500) {
-                // Výška tónu podle Y pozice
-                let freq = 100 + (1 - (handY / canvas.height)) * 800;
-                oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.1);
-                
-                // Hlasitost a filtr
-                gainNode.gain.setTargetAtTime(isFist ? 0.3 : 0.1, audioCtx.currentTime, 0.1);
-                filter.frequency.setTargetAtTime(200 + (gravityX + 1) * 2000, audioCtx.currentTime, 0.1);
-            } else {
-                gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-            }
-        }
-
-        // --- PEER & ENGINE (Zkráceno pro přehlednost, stejná logika jako dříve) ---
+        // --- CORE LOGIKA ---
         function initDisplayMode() {
             initAudio();
             peer = new Peer();
             peer.on('open', (id) => {
-                document.getElementById('mode-selection').innerHTML = `<h2 class="text-4xl">${id}</h2><p class="animate-pulse">AWAITING SONIC LINK...</p>`;
+                document.getElementById('mode-selection').innerHTML = `
+                    <p class="text-xs mb-2">PŘÍSTUPOVÝ KÓD:</p>
+                    <h2 class="text-6xl font-bold mb-6">${id}</h2>
+                    <p class="animate-pulse">ČEKÁM NA OVLADAČ...</p>`;
             });
             peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
         }
@@ -92,15 +90,23 @@
             isController = true;
             peer = new Peer();
             peer.on('open', () => {
-                conn = peer.connect(document.getElementById('remote-id-input').value);
+                const rId = document.getElementById('remote-id-input').value;
+                conn = peer.connect(rId);
                 conn.on('open', () => startEngine());
             });
         }
 
         function setupDataListener() {
-            conn.on('data', (data) => {
-                handX = data.x * canvas.width; handY = data.y * canvas.height;
-                isFist = data.fist; gravityX = data.gx; gravityY = data.gy;
+            conn.on('data', (d) => {
+                handX = d.x * canvas.width; handY = d.y * canvas.height;
+                isFist = d.fist; gravityX = d.gx; gravityY = d.gy;
+            });
+        }
+
+        function initSensors() {
+            window.addEventListener('deviceorientation', (e) => {
+                gravityX = (e.gamma / 45) * 0.3;
+                gravityY = (e.beta / 45) * 0.3;
             });
         }
 
@@ -110,11 +116,9 @@
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
             if (isController) {
-                window.addEventListener('deviceorientation', (e) => {
-                    gravityX = e.gamma / 45; gravityY = e.beta / 45;
-                });
                 const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-                hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
+                // OPTIMALIZACE: Snížení komplexnosti modelu pro starší telefony
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5 });
                 hands.onResults(res => {
                     if(res.multiHandLandmarks?.[0]) {
                         const lms = res.multiHandLandmarks[0];
@@ -123,25 +127,31 @@
                     } else { handX = -1000; }
                     if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
                 });
-                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
+                // OPTIMALIZACE: Nižší rozlišení kamery (320x240)
+                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 }).start();
             } else {
-                for(let i=0; i<200; i++) particles.push(new Particle());
+                for(let i=0; i<150; i++) particles.push(new Particle());
                 render();
             }
         }
 
         class Particle {
-            constructor() { this.reset(); this.size = Math.random() * 15 + 10; }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.bx = this.x; this.by = this.y; this.vx = 0; this.vy = 0; this.char = ["2","0","2","6","∞","*"][Math.floor(Math.random()*6)]; }
+            constructor() { this.reset(); this.size = Math.random() * 10 + 12; }
+            reset() {
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.bx = this.x; this.by = this.y; this.vx = 0; this.vy = 0;
+                this.chars = ["2","0","2","6","∞","✨"];
+                this.char = this.chars[Math.floor(Math.random()*6)];
+            }
             update() {
                 let dx = handX - this.x, dy = handY - this.y;
                 let d = Math.hypot(dx, dy);
-                if (d < 300 && handX > -500) {
-                    let force = (300 - d) / 300;
-                    if (isFist) { this.vx += (dx/d)*20; this.vy += (dy/d)*20; }
-                    else { this.vx -= (dx/d)*15; this.vy -= (dy/d)*15; }
+                if (d < 250 && handX > -500) {
+                    let f = (250 - d) / 250;
+                    if (isFist) { this.vx += (dx/d)*f*20; this.vy += (dy/d)*f*20; }
+                    else { this.vx -= (dx/d)*f*15; this.vy -= (dy/d)*f*15; }
                 }
-                this.vx += (this.bx - this.x) * 0.05; this.vy += (this.by - this.y) * 0.05;
+                this.vx += (this.bx - this.x) * 0.04; this.vy += (this.by - this.y) * 0.04;
                 this.vx *= 0.85; this.vy *= 0.85;
                 this.x += this.vx; this.y += this.vy;
                 this.bx += gravityX * 4; this.by += gravityY * 4;
@@ -157,7 +167,10 @@
         function render() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            updateAudio();
+            if(audioCtx && handX > -500) {
+                oscillator.frequency.setTargetAtTime(200 + (1-handY/canvas.height)*600, audioCtx.currentTime, 0.1);
+                gainNode.gain.setTargetAtTime(isFist ? 0.2 : 0.05, audioCtx.currentTime, 0.1);
+            }
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(render);
         }
