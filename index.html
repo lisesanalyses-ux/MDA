@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>PF 2026 | Sonic Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #00ffcc; }
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; display: none; }
+        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); }
+        .btn { border: 2px solid #00ffcc; padding: 15px 30px; cursor: pointer; margin: 10px; text-transform: uppercase; font-weight: 800; transition: all 0.4s; letter-spacing: 3px; }
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 40px rgba(0, 255, 204, 0.6); }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1 class="text-6xl mb-2 font-black italic">PF 2026</h1>
+        <p class="mb-12 text-sm tracking-widest opacity-60 uppercase italic">Sonic & Visual Synchronicity</p>
+        
+        <div id="mode-selection" class="flex flex-col items-center">
+            <button class="btn" onclick="initDisplayMode()">[ OPEN SONIC STAGE ]</button>
+            <div class="h-px w-48 bg-emerald-900 my-8"></div>
+            <input type="text" id="remote-id-input" class="bg-black border border-cyan-500 text-center p-2 mb-4" placeholder="STAGE ID">
+            <button class="btn" onclick="initControllerMode()">[ SYNC NOKIA G42 ]</button>
+        </div>
+    </div>
+
+    <canvas id="stage-canvas"></canvas>
+    <video id="input-video" playsinline style="display:none;"></video>
+
+    <script>
+        const canvas = document.getElementById('stage-canvas');
+        const ctx = canvas.getContext('2d');
+        const videoElement = document.getElementById('input-video');
+        
+        let peer, conn, isController = false;
+        let particles = [];
+        let handX = -1000, handY = -1000, isFist = false;
+        let gravityX = 0, gravityY = 0.15;
+        
+        // AUDIO PROMĚNNÉ
+        let audioCtx, oscillator, gainNode, filter;
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            filter = audioCtx.createBiquadFilter();
+
+            oscillator.type = 'sawtooth';
+            filter.type = 'lowpass';
+            
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            gainNode.gain.value = 0;
+            oscillator.start();
+        }
+
+        function updateAudio() {
+            if (!audioCtx) return;
+            if (handX > -500) {
+                // Výška tónu podle Y pozice
+                let freq = 100 + (1 - (handY / canvas.height)) * 800;
+                oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.1);
+                
+                // Hlasitost a filtr
+                gainNode.gain.setTargetAtTime(isFist ? 0.3 : 0.1, audioCtx.currentTime, 0.1);
+                filter.frequency.setTargetAtTime(200 + (gravityX + 1) * 2000, audioCtx.currentTime, 0.1);
+            } else {
+                gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        // --- PEER & ENGINE (Zkráceno pro přehlednost, stejná logika jako dříve) ---
+        function initDisplayMode() {
+            initAudio();
+            peer = new Peer();
+            peer.on('open', (id) => {
+                document.getElementById('mode-selection').innerHTML = `<h2 class="text-4xl">${id}</h2><p class="animate-pulse">AWAITING SONIC LINK...</p>`;
+            });
+            peer.on('connection', (c) => { conn = c; setupDataListener(); startEngine(); });
+        }
+
+        function initControllerMode() {
+            isController = true;
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(document.getElementById('remote-id-input').value);
+                conn.on('open', () => startEngine());
+            });
+        }
+
+        function setupDataListener() {
+            conn.on('data', (data) => {
+                handX = data.x * canvas.width; handY = data.y * canvas.height;
+                isFist = data.fist; gravityX = data.gx; gravityY = data.gy;
+            });
+        }
+
+        async function startEngine() {
+            document.getElementById('ui-layer').style.display = 'none';
+            canvas.style.display = 'block';
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+            if (isController) {
+                window.addEventListener('deviceorientation', (e) => {
+                    gravityX = e.gamma / 45; gravityY = e.beta / 45;
+                });
+                const hands = new Hands({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
+                hands.onResults(res => {
+                    if(res.multiHandLandmarks?.[0]) {
+                        const lms = res.multiHandLandmarks[0];
+                        handX = (1 - lms[8].x); handY = lms[8].y;
+                        isFist = (Math.hypot(lms[8].x - lms[0].x, lms[8].y - lms[0].y) < 0.3);
+                    } else { handX = -1000; }
+                    if(conn?.open) conn.send({ x: handX, y: handY, fist: isFist, gx: gravityX, gy: gravityY });
+                });
+                new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480 }).start();
+            } else {
+                for(let i=0; i<200; i++) particles.push(new Particle());
+                render();
+            }
+        }
+
+        class Particle {
+            constructor() { this.reset(); this.size = Math.random() * 15 + 10; }
+            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.bx = this.x; this.by = this.y; this.vx = 0; this.vy = 0; this.char = ["2","0","2","6","∞","*"][Math.floor(Math.random()*6)]; }
+            update() {
+                let dx = handX - this.x, dy = handY - this.y;
+                let d = Math.hypot(dx, dy);
+                if (d < 300 && handX > -500) {
+                    let force = (300 - d) / 300;
+                    if (isFist) { this.vx += (dx/d)*20; this.vy += (dy/d)*20; }
+                    else { this.vx -= (dx/d)*15; this.vy -= (dy/d)*15; }
+                }
+                this.vx += (this.bx - this.x) * 0.05; this.vy += (this.by - this.y) * 0.05;
+                this.vx *= 0.85; this.vy *= 0.85;
+                this.x += this.vx; this.y += this.vy;
+                this.bx += gravityX * 4; this.by += gravityY * 4;
+                if (this.by > canvas.height) this.by = 0; if (this.bx > canvas.width) this.bx = 0;
+            }
+            draw() {
+                ctx.fillStyle = isFist ? "#ff00ff" : "#00ffcc";
+                ctx.font = `${this.size}px JetBrains Mono`;
+                ctx.fillText(this.char, this.x, this.y);
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            updateAudio();
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(render);
+        }
+    </script>
+</body>
+</html>
