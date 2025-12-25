@@ -9,189 +9,78 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root { --aura-cyan: #00f2ff; --aura-magenta: #ff00ff; }
-        body { background: #000; margin: 0; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: var(--aura-cyan); touch-action: none; }
+        body { background: #000; margin: 0; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: var(--aura-cyan); }
         
-        /* Scanlines efekt */
+        /* Vrstvy */
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
+        #ui-layer { position: relative; z-index: 10; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+        #ui-layer * { pointer-events: auto; }
+
         .scanlines::before {
             content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.02));
             z-index: 1000; background-size: 100% 3px, 3px 100%; pointer-events: none;
         }
 
-        /* Dekodér stream */
         #ascii-decoder-stream {
             position: fixed; left: 25%; top: 0; height: 100vh; width: 50px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            gap: 4px; font-size: 18.4px; color: rgba(0, 242, 255, 0.15); z-index: 10; pointer-events: none;
+            gap: 4px; font-size: 18.4px; color: rgba(0, 242, 255, 0.15); z-index: 5; pointer-events: none;
         }
 
-        /* Vylepšený Glow a Bouncing efekt */
         .match-digit { 
-            color: #fff; 
-            text-shadow: 0 0 10px #fff, 0 0 20px var(--aura-cyan), 0 0 30px var(--aura-cyan); 
-            animation: bounce 0.5s infinite alternate; 
-            background: rgba(0, 242, 255, 0.4); 
-            padding: 2px 8px;
-            z-index: 20;
+            color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--aura-cyan); 
+            animation: bounce 0.5s infinite alternate; background: rgba(0, 242, 255, 0.4); padding: 2px 8px;
         }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
-        /* Tlačítka */
         .btn-cyber {
-            position: relative; padding: 12px 40px; background: rgba(0, 0, 0, 0.8);
-            text-transform: uppercase; font-weight: 800; letter-spacing: 4px; cursor: pointer;
-            border: 1px solid var(--clr); color: var(--clr); transition: 0.3s; width: 350px; text-align: center;
+            padding: 12px 40px; background: rgba(0, 0, 0, 0.8); text-transform: uppercase; 
+            font-weight: 800; letter-spacing: 4px; cursor: pointer; border: 1px solid var(--clr); 
+            color: var(--clr); transition: 0.3s; width: 350px; text-align: center;
         }
         .btn-cyber:hover { background: var(--clr); color: #000; box-shadow: 0 0 20px var(--clr); }
-        .cyan-btn { --clr: var(--aura-cyan); box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.4); }
-        .magenta-btn { --clr: var(--aura-magenta); box-shadow: inset 0 0 15px rgba(255, 0, 255, 0.4); }
+        .cyan-btn { --clr: var(--aura-cyan); }
+        .magenta-btn { --clr: var(--aura-magenta); }
 
         .input-cyber {
             background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(0, 242, 255, 0.3);
-            color: white; padding: 10px; text-align: center; width: 350px; font-size: 14px;
-            letter-spacing: 4px; outline: none; margin-bottom: 5px;
+            color: white; padding: 10px; text-align: center; width: 350px; outline: none;
         }
 
-        /* Sidebar */
         #side-menu {
             position: fixed; left: -350px; top: 0; width: 340px; height: 100vh;
             background: rgba(0, 10, 10, 0.98); border-right: 3px solid var(--aura-cyan);
             z-index: 2000; transition: 0.5s; padding: 80px 30px;
         }
         #side-menu.open { left: 0; }
-        .menu-item {
-            border: 1px solid rgba(0, 242, 255, 0.2); padding: 15px; margin-bottom: 12px;
-            cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 3px; font-size: 12px;
-        }
-        .menu-item:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 15px var(--aura-cyan); }
-
         .menu-trigger { position: fixed; left: 20px; top: 20px; z-index: 2100; cursor: pointer; border: 1.5px solid var(--aura-cyan); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
-
-        #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        #ui-layer * { pointer-events: auto; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
-        
-        #manifest-frame-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; }
-        #manifest-frame-container.active { display: block; }
     </style>
 </head>
 <body class="scanlines">
 
-    <audio id="bg-audio" loop>
-        <source src="https://lisesanalyses-ux.github.io/MDA/assets/ambient_core.mp3" type="audio/mpeg">
-    </audio>
-
-    <div class="menu-trigger" onclick="toggleMenu()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-    </div>
-
-    <nav id="side-menu">
-        <h3 class="text-[10px] opacity-40 mb-10 tracking-[8px] text-center uppercase">System Alpha</h3>
-        <div class="menu-item" onclick="openAuraManifest()">01. Aura Manifest Frame</div>
-        <div class="menu-item" onclick="window.open('https://lisesanalyses-ux.github.io/MDA/AuraManifest.html', '_blank')">02. Open Manifest Solo</div>
-        <div class="menu-item" onclick="toggleAudio()">03. Toggle Audio Flux</div>
-        <div class="menu-item" onclick="location.reload()">04. Hard Reboot</div>
-        <div class="mt-20 opacity-20 text-[9px] tracking-[2px]">
-            LINK_STATUS: <span id="menu-link-status">OFFLINE</span><br>
-            VERSION: 14.1 MASTER
-        </div>
-    </nav>
-
-    <div id="manifest-frame-container">
-        <div class="p-4 bg-black border-b border-cyan-900/30 flex justify-between items-center">
-            <button onclick="closeAuraManifest()" class="text-cyan-400 text-sm tracking-[3px]"> [ BACK_TO_CORE ] </button>
-            <span class="text-[10px] opacity-40 uppercase">Aura Manifest Active</span>
-        </div>
-        <iframe id="manifest-iframe" src="" style="width:100%; height:calc(100% - 65px); border:none;"></iframe>
-    </div>
-
+    <canvas id="stage-canvas"></canvas>
     <div id="ascii-decoder-stream"></div>
 
     <div id="ui-layer">
         <h1 class="text-7xl font-bold tracking-[20px] mb-8 text-center" style="text-shadow: 0 0 20px var(--aura-cyan);">PF 2026</h1>
         
         <div id="sync-controls" class="flex flex-col items-center gap-6">
-            <div id="host-zone" class="flex flex-col items-center gap-2">
-                <button id="init-btn" class="btn-cyber cyan-btn" onclick="runInitialization()">[ Initialize Stage ]</button>
-                <div id="node-ready" class="hidden text-center mt-4">
-                    <div id="id-output" class="text-3xl font-bold px-8 py-3 border border-cyan-500/40 tracking-[10px] bg-cyan-500/10 text-white">--- --- ---</div>
-                </div>
+            <button id="init-btn" class="btn-cyber cyan-btn" onclick="runInitialization()">[ Initialize Stage ]</button>
+            <div id="node-ready" class="hidden text-center mt-4">
+                <div id="id-output" class="text-3xl font-bold px-8 py-3 border border-cyan-500/40 tracking-[10px] bg-cyan-500/10 text-white">--- --- ---</div>
             </div>
-            <div class="w-[100px] h-[1px] bg-cyan-500/20 my-2"></div>
-            <div id="remote-zone" class="flex flex-col items-center gap-4">
-                <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="input-cyber">
-                <button id="connect-btn" class="btn-cyber magenta-btn" onclick="connectToPeer()">[ Sync Mobile ]</button>
-            </div>
-        </div>
-
-        <div class="fixed bottom-10 flex gap-10">
-            <a href="https://auraadmin.online" class="text-[10px] tracking-[3px] border border-cyan-500/30 px-4 py-1">AURAADMIN.ONLINE</a>
-            <a href="mailto:lisesanalyses@gmail.com" class="text-[10px] tracking-[3px] border border-cyan-500/30 px-4 py-1">CONTACT_SYS</a>
+            <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="input-cyber mt-4">
+            <button id="connect-btn" class="btn-cyber magenta-btn" onclick="connectToPeer()">[ Sync Mobile ]</button>
         </div>
     </div>
 
-    <canvas id="stage-canvas"></canvas>
-
     <script>
-        let peer, conn, drops = [];
-        let rx = -1000, ry = -1000, isFist = false;
         const canvas = document.getElementById('stage-canvas');
         const ctx = canvas.getContext('2d');
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*";
-
-        function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
-        
-        function toggleAudio() {
-            const a = document.getElementById('bg-audio');
-            return a.paused ? a.play() : a.pause();
-        }
-
-        function openAuraManifest() {
-            document.getElementById('manifest-iframe').src = 'https://lisesanalyses-ux.github.io/MDA/AuraManifest.html';
-            document.getElementById('manifest-frame-container').classList.add('active');
-            toggleMenu();
-        }
-
-        function closeAuraManifest() {
-            document.getElementById('manifest-frame-container').classList.remove('active');
-            document.getElementById('manifest-iframe').src = '';
-        }
-
-        function generateShortId() {
-            const pool = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            let res = "";
-            for(let i=0; i<9; i++) res += pool.charAt(Math.floor(Math.random() * pool.length));
-            return res;
-        }
-
-        function runInitialization() {
-            const masterID = generateShortId();
-            peer = new Peer(masterID);
-            peer.on('open', (id) => {
-                document.getElementById('init-btn').style.display = 'none';
-                document.getElementById('node-ready').classList.remove('hidden');
-                document.getElementById('id-output').innerText = id.match(/.{1,3}/g).join('-');
-                document.getElementById('menu-link-status').innerText = "WAITING";
-            });
-            peer.on('connection', (c) => {
-                conn = c;
-                conn.on('data', (data) => {
-                    rx = data.x * canvas.width; ry = data.y * canvas.height; isFist = data.fist;
-                    document.getElementById('id-output').style.color = isFist ? "#ff00ff" : "#00f2ff";
-                    document.getElementById('menu-link-status').innerText = "CONNECTED";
-                });
-            });
-        }
-
-        function connectToPeer() {
-            const targetID = document.getElementById('peer-id-input').value.trim().toUpperCase().replace(/-/g, '');
-            if(!targetID) return;
-            peer = new Peer(); 
-            peer.on('open', () => {
-                conn = peer.connect(targetID);
-                conn.on('open', () => { document.getElementById('connect-btn').innerText = "[ SYNCED ]"; });
-            });
-        }
+        let drops = [];
+        let rx = -1000, ry = -1000, isFist = false;
 
         class Drop {
             constructor() { this.reset(); }
@@ -213,56 +102,67 @@
                 if (this.y > canvas.height) this.reset();
             }
             draw() {
-                ctx.fillStyle = isFist ? "rgba(255, 0, 255, 0.4)" : "rgba(0, 242, 255, 0.15)";
+                ctx.fillStyle = isFist ? "rgba(255, 0, 255, 0.5)" : "rgba(0, 242, 255, 0.2)";
                 ctx.font = "12px Share Tech Mono";
                 ctx.fillText(this.char, this.x, this.y);
             }
         }
 
+        function initAura() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            drops = [];
+            for(let i=0; i<120; i++) drops.push(new Drop());
+        }
+
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drops.forEach(d => { d.update(); d.draw(); });
             requestAnimationFrame(render);
         }
 
+        // PeerJS Logika
+        let peer;
+        function runInitialization() {
+            const masterID = Math.random().toString(36).substr(2, 9).toUpperCase();
+            peer = new Peer(masterID);
+            peer.on('open', (id) => {
+                document.getElementById('init-btn').innerText = "[ STAGE READY ]";
+                document.getElementById('node-ready').classList.remove('hidden');
+                document.getElementById('id-output').innerText = id.match(/.{1,3}/g).join('-');
+            });
+            peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    rx = data.x * canvas.width; ry = data.y * canvas.height; isFist = data.fist;
+                });
+            });
+        }
+
         window.onload = () => {
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            for(let i=0; i<100; i++) drops.push(new Drop());
+            initAura();
             render();
-            
+            // Start ASCII stream
             const stream = document.getElementById('ascii-decoder-stream');
             for(let i=0; i<25; i++) {
                 const s = document.createElement('span'); s.id = `sc-${i}`;
                 stream.appendChild(s);
             }
-
             setInterval(() => {
                 const match = { "10": "2", "11": "0", "12": "2", "13": "6" };
                 for(let i=0; i<25; i++) {
                     const el = document.getElementById(`sc-${i}`);
-                    if (match[i]) {
-                        if (Math.random() > 0.7) { 
-                            el.innerText = match[i]; 
-                            el.className = "match-digit"; 
-                        } else if (Math.random() > 0.5) { } 
-                        else {
-                            el.innerText = chars[Math.floor(Math.random() * chars.length)];
-                            el.className = "";
-                        }
+                    if (match[i] && Math.random() > 0.6) {
+                        el.innerText = match[i]; el.className = "match-digit";
                     } else {
                         el.innerText = chars[Math.floor(Math.random() * chars.length)];
                         el.className = "";
                     }
                 }
-            }, 120);
+            }, 100);
         };
 
-        // Responzivní resize handler
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        window.onresize = initAura;
     </script>
 </body>
 </html>
