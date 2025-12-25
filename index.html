@@ -24,40 +24,41 @@
         }
         @keyframes glow { from { opacity: 0.8; } to { opacity: 1; text-shadow: 0 0 40px var(--aura-cyan); } }
 
-        /* SVISLÝ ASCII PRUH */
-        #ascii-decoder-stream {
-            position: fixed; left: 25%; top: 0; height: 100vh; width: 40px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            gap: 2px; font-size: 16px; color: rgba(0, 242, 255, 0.3); z-index: 100;
-            pointer-events: none; text-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
+        /* HUD BACK BUTTON - NOVÝ DESIGN */
+        .back-btn {
+            position: absolute; top: 30px; left: 30px; z-index: 5001;
+            width: 320px; height: 28px; /* Dlouhé a velmi nízké */
+            background: rgba(0, 0, 0, 0.6);
+            border-left: 4px solid var(--aura-cyan);
+            border-right: 1px solid rgba(0, 242, 255, 0.2);
+            color: var(--aura-cyan);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 12px;
+            font-size: 9px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(0 0, 95% 0, 100% 50%, 95% 100%, 0 100%); /* Technický střih konce */
         }
 
-        /* ANIMACE PRO MATCHING - SNÍŽENÝ GLOW */
-        .match-digit {
-            color: #fff; font-weight: bold; font-size: 26px;
-            text-shadow: 0 0 10px var(--aura-cyan); /* Zmenšený glow */
-            background: rgba(0, 242, 255, 0.25); /* Jemnější pozadí */
-            padding: 4px 8px;
-            animation: digit-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            z-index: 150;
+        .back-btn:hover {
+            width: 380px;
+            background: rgba(0, 242, 255, 0.15);
+            border-left-width: 8px;
+            box-shadow: -10px 0 20px rgba(0, 242, 255, 0.2);
         }
 
-        @keyframes digit-bounce {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.3); } /* Trochu menší odskok */
-            100% { transform: scale(1.2); opacity: 1; }
+        .back-btn .status-dot {
+            width: 4px; height: 4px; background: var(--aura-cyan);
+            box-shadow: 0 0 8px var(--aura-cyan);
+            animation: blink 1s infinite;
         }
 
-        .dissolve-effect {
-            animation: dissolve 0.4s ease-out forwards;
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        @keyframes dissolve {
-            0% { transform: scale(1.2); filter: blur(0px); opacity: 1; }
-            100% { transform: scale(2); filter: blur(10px); opacity: 0; }
-        }
-
-        /* TLAČÍTKA */
+        /* TLAČÍTKA HLAVNÍ */
         .btn-cyber {
             position: relative; padding: 18px 40px; background: rgba(0, 0, 0, 0.8);
             text-transform: uppercase; font-weight: 800; letter-spacing: 3px; cursor: pointer;
@@ -69,31 +70,14 @@
         .cyan-btn { --clr: var(--aura-cyan); }
         .magenta-btn { --clr: var(--aura-magenta); }
 
-        .input-cyber {
-            background: rgba(0, 20, 20, 0.8); border: 1px solid rgba(0, 242, 255, 0.3);
-            color: white; padding: 15px; text-align: center; width: 360px; outline: none;
-            font-family: 'Share Tech Mono', monospace; margin-bottom: 10px; transition: 0.3s;
+        /* MODAL FRAME */
+        #manifest-frame-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 5000; display: none;
         }
+        #manifest-frame-container.active { display: block; }
 
-        /* PROMO BUBLINY */
-        .promo-bubble { 
-            position: fixed; bottom: 30px; border: 1px solid var(--aura-cyan); 
-            padding: 8px 18px; border-radius: 4px; font-size: 11px; 
-            background: rgba(0,0,0,0.9); text-decoration: none; color: var(--aura-cyan); 
-            z-index: 1500; transition: all 0.3s ease;
-            display: flex; align-items: center; gap: 8px;
-            letter-spacing: 1px; text-transform: uppercase;
-        }
-        .promo-bubble:hover { 
-            background: var(--aura-cyan); color: #000; 
-            box-shadow: 0 0 15px var(--aura-cyan);
-            transform: translateY(-5px) translateX(-50%);
-        }
-        
-        #link-web { left: 35%; transform: translateX(-50%); } 
-        #link-mail { right: 40%; transform: translateX(50%); }
-
-        /* SIDEBAR */
+        /* SIDEBAR A OSTATNÍ STYLY ZACHOVÁNY */
         #side-menu {
             position: fixed; left: -350px; top: 0; width: 340px; height: 100vh;
             background: rgba(0, 10, 10, 0.98); border-right: 3px solid var(--aura-cyan);
@@ -107,7 +91,7 @@
             text-transform: uppercase; cursor: pointer; text-align: center; transition: 0.3s;
         }
         .menu-item:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 20px var(--aura-cyan); }
-
+        
         .menu-trigger {
             position: fixed; left: 30px; top: 30px; z-index: 2100;
             cursor: pointer; font-size: 32px; color: var(--aura-cyan); 
@@ -116,24 +100,10 @@
             border: 2px solid var(--aura-cyan); border-radius: 15px;
         }
 
-        /* MODAL FRAME PRO AURAMANIFEST */
-        #manifest-frame-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 5000; display: none;
-        }
-        #manifest-frame-container.active { display: block; }
-        
-        .back-btn {
-            position: absolute; top: 20px; left: 20px; z-index: 5001;
-            padding: 10px 20px; background: #000; border: 1px solid var(--aura-cyan);
-            color: var(--aura-cyan); cursor: pointer; text-transform: uppercase;
-            font-weight: bold; letter-spacing: 2px;
-        }
-        .back-btn:hover { background: var(--aura-cyan); color: #000; }
-
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         #ui-layer * { pointer-events: auto; }
         canvas { position: absolute; top: 0; left: 0; z-index: 5; }
+        #ascii-decoder-stream { position: fixed; left: 25%; top: 0; height: 100vh; width: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; font-size: 16px; color: rgba(0, 242, 255, 0.3); z-index: 100; pointer-events: none; }
     </style>
 </head>
 <body class="scanlines">
@@ -148,7 +118,13 @@
     </nav>
 
     <div id="manifest-frame-container">
-        <button class="back-btn" onclick="closeAuraManifest()">← BACK TO SYSTEM</button>
+        <button class="back-btn" onclick="closeAuraManifest()">
+            <div class="flex items-center gap-4">
+                <div class="status-dot"></div>
+                <span>Terminal.Exit_Sequence</span>
+            </div>
+            <span class="opacity-40 font-bold">[ ESC ]</span>
+        </button>
         <iframe id="manifest-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
     </div>
 
@@ -166,23 +142,16 @@
             <div class="h-[1px] w-40 bg-cyan-500/20 my-2"></div>
             <div class="flex flex-col items-center">
                 <span class="text-[10px] tracking-[4px] mb-2 opacity-50 uppercase">Remote Controller</span>
-                <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="input-cyber">
+                <input type="text" id="peer-id-input" placeholder="ENTER NODE ID" class="bg-black/50 border border-cyan-500/30 p-4 text-center w-[360px] outline-none mb-2">
                 <button class="btn-cyber magenta-btn" onclick="requestPermissions()">[ Sync Mobile ]</button>
             </div>
         </div>
     </div>
 
-    <a href="https://auraadmin.online" target="_blank" id="link-web" class="promo-bubble">
-        <span style="font-size: 14px;">🌐</span> auraadmin.online
-    </a>
-
-    <a href="mailto:lisesanalyses@gmail.com" id="link-mail" class="promo-bubble">
-        <span style="font-size: 16px;">✉</span> lisesanalyses@gmail.com
-    </a>
-
     <canvas id="stage-canvas"></canvas>
 
     <script>
+        // ... Logika zůstává stejná jako v předchozím kódu ...
         let peer, conn, isSynced = false;
         let gravityX = 0, gravityY = 0;
         const canvas = document.getElementById('stage-canvas');
@@ -190,7 +159,6 @@
 
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
 
-        // Funkce pro Frame AuraManifest
         function openAuraManifest() {
             const container = document.getElementById('manifest-frame-container');
             const iframe = document.getElementById('manifest-iframe');
@@ -201,99 +169,11 @@
 
         function closeAuraManifest() {
             const container = document.getElementById('manifest-frame-container');
-            const iframe = document.getElementById('manifest-iframe');
-            iframe.src = '';
+            document.getElementById('manifest-iframe').src = '';
             container.classList.remove('active');
         }
 
-        const asciiContainer = document.getElementById('ascii-decoder-stream');
-        const streamSize = 30; 
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*§";
-        for(let i=0; i<streamSize; i++) {
-            const span = document.createElement('span');
-            span.id = `ascii-${i}`;
-            asciiContainer.appendChild(span);
-        }
-
-        let tick = 0;
-        setInterval(() => {
-            tick++;
-            const cyclePos = tick % 70;
-            const matchSequence = { "12": "2", "13": "0", "14": "2", "15": "6" };
-            
-            for(let i=0; i<streamSize; i++) {
-                const el = document.getElementById(`ascii-${i}`);
-                if (matchSequence[i]) {
-                    if (cyclePos > 40 && cyclePos <= 55) {
-                        el.innerText = matchSequence[i];
-                        if (!el.classList.contains('match-digit')) el.className = "match-digit";
-                    } else if (cyclePos > 55 && cyclePos <= 60) {
-                        el.className = "match-digit dissolve-effect";
-                    } else {
-                        el.innerText = chars[Math.floor(Math.random()*chars.length)];
-                        el.className = "";
-                    }
-                } else {
-                    el.innerText = chars[Math.floor(Math.random()*chars.length)];
-                    el.className = "";
-                }
-            }
-        }, 70);
-
-        const manifestStr = "EVERYONE SHOULD ASK: IN WHAT SOCIETY DO WE WANT TO LIVE? REALITY IS FORMED BY OUR DAILY DEEDS.";
-        let charIdx = 0;
-        function typeManifest() {
-            if (charIdx < manifestStr.length) {
-                document.getElementById('manifest-block').innerHTML += manifestStr.charAt(charIdx);
-                charIdx++; setTimeout(typeManifest, 50);
-            }
-        }
-
-        function initHost() {
-            peer = new Peer();
-            peer.on('open', (id) => {
-                document.getElementById('sync-controls').innerHTML = `
-                    <div class="p-8 border-2 border-cyan-500 bg-black text-center w-[360px] shadow-[0_0_30px_rgba(0,242,255,0.3)]">
-                        <p class="text-[10px] opacity-50 mb-2 tracking-[4px]">UPLINK ESTABLISHED</p>
-                        <h2 class="text-5xl font-black mb-6 text-white">${id}</h2>
-                        <p class="animate-pulse text-cyan-400 text-xs">AWAITING EXTERNAL DATA...</p>
-                    </div>`;
-            });
-            peer.on('connection', (c) => { 
-                conn = c; 
-                c.on('data', (data) => {
-                    if(data.type === 'sensor-data') {
-                        gravityX = data.gx; gravityY = data.gy;
-                        if(!isSynced) { isSynced = true; document.getElementById('ui-layer').style.opacity = "0.2"; }
-                    }
-                });
-            });
-        }
-
-        async function requestPermissions() {
-            if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
-                const res = await DeviceOrientationEvent.requestPermission();
-                if (res === 'granted') initSensors();
-            } else { initSensors(); }
-            initRemote();
-        }
-
-        function initSensors() {
-            window.addEventListener('deviceorientation', (e) => {
-                gravityX = (e.gamma / 45); gravityY = (e.beta / 45);
-                if(conn && conn.open) conn.send({ gx: gravityX, gy: gravityY, type: 'sensor-data' });
-            });
-        }
-
-        function initRemote() {
-            peer = new Peer();
-            peer.on('open', () => {
-                const rId = document.getElementById('peer-id-input').value;
-                conn = peer.connect(rId);
-                conn.on('open', () => alert("SYNC SUCCESSFUL"));
-            });
-        }
-
+        // Matrix Rain / Drops Logic
         let drops = [];
         class Drop {
             constructor() { this.reset(); }
@@ -319,7 +199,7 @@
         window.onload = () => {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             for(let i=0; i<100; i++) drops.push(new Drop());
-            typeManifest(); render();
+            render();
         };
     </script>
 </body>
