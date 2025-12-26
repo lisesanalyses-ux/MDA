@@ -17,6 +17,43 @@
             z-index: 1000; background-size: 100% 3px; pointer-events: none;
         }
 
+        /* SIDEBAR MENU */
+        #side-menu {
+            position: fixed; left: -350px; top: 0; width: 340px; height: 100vh;
+            background: rgba(0, 10, 10, 0.98); border-right: 3px solid var(--aura-cyan);
+            z-index: 2000; transition: 0.5s cubic-bezier(0.85, 0, 0.15, 1);
+            padding: 100px 30px;
+        }
+        #side-menu.open { left: 0; }
+        .menu-item {
+            display: block; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(0, 242, 255, 0.2);
+            color: var(--aura-cyan); text-decoration: none; font-size: 18px;
+            text-transform: uppercase; cursor: pointer; text-align: center; transition: 0.3s;
+        }
+        .menu-item:hover { background: var(--aura-cyan); color: #000; box-shadow: 0 0 20px var(--aura-cyan); }
+
+        .menu-trigger {
+            position: fixed; left: 30px; top: 30px; z-index: 2100;
+            cursor: pointer; font-size: 32px; color: var(--aura-cyan); 
+            background: rgba(0, 20, 20, 0.8); width: 60px; height: 60px; 
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--aura-cyan); border-radius: 10px;
+        }
+
+        /* IFRAME CONTAINER */
+        #frame-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 5000; display: none;
+        }
+        #frame-container.active { display: block; }
+        .back-btn {
+            position: absolute; top: 20px; right: 20px; z-index: 5001;
+            padding: 12px 24px; background: #000; border: 2px solid var(--aura-cyan);
+            color: var(--aura-cyan); cursor: pointer; text-transform: uppercase;
+            font-weight: bold; letter-spacing: 2px;
+        }
+        .back-btn:hover { background: var(--aura-cyan); color: #000; }
+
         #ui-layer { position: absolute; z-index: 50; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #051010 0%, #000 100%); transition: 0.5s; }
         canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; }
 
@@ -32,15 +69,28 @@
 </head>
 <body class="scanlines">
 
+    <div class="menu-trigger" onclick="toggleMenu()">☰</div>
+    
+    <nav id="side-menu">
+        <h3 class="text-[10px] opacity-40 mb-10 tracking-[5px] text-center uppercase">System Navigation</h3>
+        <div class="menu-item" onclick="openFrame('https://lisesanalyses-ux.github.io/MDA/AuraManifest.html')">01. AuraManifest</div>
+        <div class="menu-item" onclick="openFrame('https://lisesanalyses-ux.github.io/MDA/Aethereo_Stage.html')">02. Aethereo Stage</div>
+        <div class="menu-item" onclick="location.reload()">03. Reset System</div>
+        <div class="menu-item" onclick="toggleMenu()" style="margin-top: 50px; border-color: rgba(255,0,0,0.2); color: #ff4444;">[ Close ]</div>
+    </nav>
+
+    <div id="frame-container">
+        <button class="back-btn" onclick="closeFrame()">← Back to Menu</button>
+        <iframe id="nav-iframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
     <div id="ui-layer">
         <h1 class="text-6xl font-black mb-2 italic tracking-tighter" style="text-shadow: 0 0 20px var(--aura-cyan);">PF 2026</h1>
         <p class="mb-12 opacity-50 tracking-[10px] uppercase text-xs">AuraManifest System</p>
         
         <div id="mode-selection" class="flex flex-col items-center">
             <button class="btn-cyber" onclick="initDisplay()">[ Start Display Stage ]</button>
-            
             <div class="h-px w-40 bg-cyan-900 my-8"></div>
-            
             <input type="text" id="remote-input" placeholder="ENTER 4-CHAR ID">
             <button class="btn-cyber" onclick="initRemote()">[ Sync Controller ]</button>
         </div>
@@ -56,16 +106,31 @@
         let gravityX = 0, gravityY = 0;
         const chars = "0123456789ABCDEF";
 
-        // --- 1. GENERÁTOR KRÁTKÉHO ID (4 ZNAKY) ---
+        // --- SIDEBAR & FRAME LOGIC ---
+        function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); }
+
+        function openFrame(url) {
+            const container = document.getElementById('frame-container');
+            const iframe = document.getElementById('nav-iframe');
+            iframe.src = url;
+            container.classList.add('active');
+            toggleMenu();
+        }
+
+        function closeFrame() {
+            const container = document.getElementById('frame-container');
+            document.getElementById('nav-iframe').src = '';
+            container.classList.remove('active');
+        }
+
+        // --- PEERJS LOGIC (4-CHAR ID) ---
         function generateShortId() {
             return Math.random().toString(36).substr(2, 4).toUpperCase();
         }
 
-        // --- 2. LOGIKA PRO VELKOU OBRAZOVKU (DISPLAY) ---
         function initDisplay() {
             const shortId = generateShortId();
             peer = new Peer(shortId);
-            
             peer.on('open', (id) => {
                 document.getElementById('mode-selection').innerHTML = `
                     <div class="text-center">
@@ -74,15 +139,12 @@
                         <p class="animate-pulse text-cyan-400 text-xs tracking-[3px]">AWAITING REMOTE SYNC...</p>
                     </div>`;
             });
-
             peer.on('connection', (c) => {
                 conn = c;
                 document.getElementById('ui-layer').style.opacity = "0";
                 setTimeout(() => document.getElementById('ui-layer').style.display = 'none', 500);
-                
                 setupDrops();
                 c.on('data', (data) => {
-                    // Převod relativních souřadnic (0-1) na pixely
                     remoteX = data.x * canvas.width;
                     remoteY = data.y * canvas.height;
                     isFist = data.fist;
@@ -93,29 +155,24 @@
             });
         }
 
-        // --- 3. LOGIKA PRO MOBIL (CONTROLLER) ---
         async function initRemote() {
             const targetId = document.getElementById('remote-input').value.toUpperCase().trim();
             if(!targetId) return alert("Zadej ID!");
 
-            // Žádost o přístup k senzorům (iOS/Android)
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const res = await DeviceOrientationEvent.requestPermission();
-                    if (res === 'granted') window.addEventListener('deviceorientation', handleMotion);
-                } catch (e) { console.error(e); }
+            if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+                const res = await DeviceOrientationEvent.requestPermission();
+                if (res === 'granted') window.addEventListener('deviceorientation', handleMotion);
             } else {
                 window.addEventListener('deviceorientation', handleMotion);
             }
 
-            // Touch eventy pro simulaci "pěsti" (isFist) a pozice
             window.addEventListener('touchstart', (e) => { isFist = true; sendTouch(e); });
             window.addEventListener('touchend', () => { isFist = false; sendTouch(null); });
             window.addEventListener('touchmove', (e) => { sendTouch(e); });
 
             function handleMotion(e) {
-                gravityX = e.gamma / 45; // náklon do stran
-                gravityY = e.beta / 45;  // náklon vpřed/vzad
+                gravityX = e.gamma / 45;
+                gravityY = e.beta / 45;
                 sendAllData();
             }
 
@@ -128,9 +185,7 @@
             }
 
             function sendAllData() {
-                if(conn && conn.open) {
-                    conn.send({ x: remoteX, y: remoteY, fist: isFist, gx: gravityX, gy: gravityY });
-                }
+                if(conn?.open) conn.send({ x: remoteX, y: remoteY, fist: isFist, gx: gravityX, gy: gravityY });
             }
 
             peer = new Peer();
@@ -140,13 +195,13 @@
                     document.getElementById('ui-layer').innerHTML = `
                         <div class="text-center">
                             <h2 class="text-white text-2xl font-bold mb-4 tracking-widest">CONNECTED</h2>
-                            <p class="opacity-50 text-xs tracking-widest uppercase">Tilt device for gravity<br>Touch to attract particles</p>
+                            <p class="opacity-50 text-xs tracking-widest">TILT FOR GRAVITY / TOUCH FOR INTERACTION</p>
                         </div>`;
                 });
             });
         }
 
-        // --- 4. ENGINE ANIMACE ---
+        // --- ANIMATION ENGINE ---
         class Drop {
             constructor() { this.reset(); }
             reset() {
@@ -157,34 +212,17 @@
                 this.char = chars[Math.floor(Math.random()*chars.length)];
             }
             update() {
-                // Lokální interakce s "prstem/pěstí" (AMM logika)
-                let dx = remoteX - this.x;
-                let dy = remoteY - this.y;
+                let dx = remoteX - this.x, dy = remoteY - this.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
-
                 if (dist < 250 && remoteX > -500) {
-                    if (isFist) { // Přitahování (Pěst)
-                        this.x += dx * 0.12;
-                        this.y += dy * 0.12;
-                    } else { // Odpuzování (Dlaň)
-                        this.x -= dx * 0.04;
-                        this.y -= dy * 0.04;
-                    }
+                    if (isFist) { this.x += dx * 0.12; this.y += dy * 0.12; }
+                    else { this.x -= dx * 0.04; this.y -= dy * 0.04; }
                 }
-
-                // Globální gravitace z gyroskopu
-                this.x += gravityX * 12;
-                this.y += gravityY * 12;
-
-                // Návrat do původního proudu a pád
+                this.x += gravityX * 12; this.y += gravityY * 12;
                 this.x += (this.baseX - this.x) * 0.02;
                 this.y += (this.baseY - this.y) * 0.02;
-                
                 this.baseY += this.speed;
-                if (this.baseY > canvas.height) {
-                    this.baseY = -20;
-                    this.baseX = Math.random() * canvas.width;
-                }
+                if (this.baseY > canvas.height) { this.baseY = -20; this.baseX = Math.random() * canvas.width; }
             }
             draw() {
                 ctx.fillStyle = isFist ? "#ff00ff" : "rgba(0, 242, 255, 0.4)";
@@ -194,8 +232,7 @@
         }
 
         function setupDrops() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             for(let i=0; i<250; i++) drops.push(new Drop());
         }
 
@@ -206,10 +243,7 @@
             requestAnimationFrame(render);
         }
 
-        window.onresize = () => { 
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight; 
-        };
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     </script>
 </body>
 </html>
